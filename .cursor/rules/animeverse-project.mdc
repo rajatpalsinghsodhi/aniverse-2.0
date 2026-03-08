@@ -1,0 +1,12 @@
+---
+description: AnimeVerse project stack and conventions — use for all edits in this repo
+alwaysApply: true
+---
+
+# AnimeVerse Project
+
+- **Stack**: React 18, TypeScript, Vite. Tailwind CSS (with custom theme below). Framer Motion for animations. HLS.js for video.
+- **Structure**: `components/` for UI, `services/` for API (jikanService, anilistService, geminiService), `types.ts`, `constants.ts`. Entry: `index.tsx` → `App.tsx`.
+- **Design**: Dark-first. Primary pink `#f4258c`, dark bg `#181114`, surface `#221019`, accent purple `#a855f7`. Font: Plus Jakarta Sans. Use existing Tailwind classes and `primary`, `background-dark`, `surface-dark`, `accent-purple` from theme.
+- **Patterns**: Functional components, existing `Anime` type from `types.ts`. Reuse `AnimeCard`, modals, Sidebar patterns. No new global state unless necessary; prefer local state or lifting only what’s needed.
+- **When adding features**: Match existing component style (Tailwind + motion), reuse services and types, keep the same file layout.

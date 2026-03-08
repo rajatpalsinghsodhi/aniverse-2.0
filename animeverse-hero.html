@@ -1,0 +1,990 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AnimeVerse — Enter the World</title>
+<link href="https://fonts.googleapis.com/css2?family=Amarante&family=Zen+Kaku+Gothic+New:wght@300;400;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #0d0d0f;
+    --paper: #f0e8d8;
+    --red: #c8102e;
+    --red-dim: #7a0a1c;
+    --gold: #d4a843;
+    --muted: #4a4040;
+    --scan: rgba(240,232,216,0.03);
+  }
+
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--ink);
+    color: var(--paper);
+    font-family: 'Zen Kaku Gothic New', sans-serif;
+    overflow-x: hidden;
+    cursor: none;
+  }
+
+  /* Custom cursor */
+  .cursor {
+    position: fixed;
+    width: 12px; height: 12px;
+    background: var(--red);
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 9999;
+    transform: translate(-50%, -50%);
+    transition: transform 0.1s ease, width 0.2s, height 0.2s;
+    mix-blend-mode: difference;
+  }
+  .cursor-ring {
+    position: fixed;
+    width: 36px; height: 36px;
+    border: 1px solid var(--paper);
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 9998;
+    transform: translate(-50%, -50%);
+    transition: transform 0.15s ease, width 0.3s, height 0.3s, opacity 0.3s;
+    opacity: 0.5;
+  }
+
+  /* Scanlines overlay */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      var(--scan) 0px,
+      var(--scan) 1px,
+      transparent 1px,
+      transparent 3px
+    );
+    pointer-events: none;
+    z-index: 100;
+  }
+
+  /* Noise grain */
+  body::after {
+    content: '';
+    position: fixed;
+    inset: -50%;
+    width: 200%; height: 200%;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 99;
+    opacity: 0.4;
+    animation: grain 0.5s steps(2) infinite;
+  }
+  @keyframes grain {
+    0%,100% { transform: translate(0,0); }
+    25% { transform: translate(-2%,1%); }
+    50% { transform: translate(1%,-2%); }
+    75% { transform: translate(2%,2%); }
+  }
+
+  /* ===== NAV ===== */
+  nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 50;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 24px 48px;
+    mix-blend-mode: normal;
+  }
+  nav::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 48px; right: 48px;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--paper), transparent);
+    opacity: 0.15;
+  }
+  .nav-logo {
+    font-family: 'Amarante', serif;
+    font-size: 22px;
+    letter-spacing: 0.08em;
+    color: var(--paper);
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .nav-logo span {
+    color: var(--red);
+  }
+  .logo-kanji {
+    font-family: 'Zen Kaku Gothic New', sans-serif;
+    font-size: 11px;
+    font-weight: 300;
+    letter-spacing: 0.3em;
+    color: var(--muted);
+    display: block;
+    line-height: 1;
+  }
+  .nav-links {
+    display: flex;
+    gap: 40px;
+    list-style: none;
+  }
+  .nav-links a {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    color: var(--muted);
+    text-decoration: none;
+    text-transform: uppercase;
+    transition: color 0.3s;
+    position: relative;
+  }
+  .nav-links a::after {
+    content: '';
+    position: absolute;
+    bottom: -4px; left: 0;
+    width: 0; height: 1px;
+    background: var(--red);
+    transition: width 0.3s;
+  }
+  .nav-links a:hover { color: var(--paper); }
+  .nav-links a:hover::after { width: 100%; }
+  .nav-cta {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--ink);
+    background: var(--paper);
+    border: none;
+    padding: 10px 24px;
+    cursor: none;
+    transition: background 0.3s, color 0.3s;
+  }
+  .nav-cta:hover {
+    background: var(--red);
+    color: var(--paper);
+  }
+
+  /* ===== HERO ===== */
+  .hero {
+    min-height: 100vh;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* Vertical Japanese text column */
+  .hero-jp-column {
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 48px;
+    border-right: 1px solid rgba(240,232,216,0.08);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+    padding: 120px 0;
+  }
+  .hero-jp-text {
+    font-family: 'Zen Kaku Gothic New', sans-serif;
+    font-size: 10px;
+    font-weight: 300;
+    color: rgba(240,232,216,0.2);
+    writing-mode: vertical-rl;
+    letter-spacing: 0.3em;
+  }
+
+  /* Left content */
+  .hero-left {
+    padding: 140px 60px 80px 80px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    position: relative;
+    z-index: 2;
+  }
+
+  .hero-eyebrow {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.4em;
+    color: var(--red);
+    text-transform: uppercase;
+    margin-bottom: 32px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    opacity: 0;
+    animation: fadeUp 0.8s ease forwards 0.3s;
+  }
+  .hero-eyebrow::before {
+    content: '';
+    width: 32px; height: 1px;
+    background: var(--red);
+  }
+
+  .hero-title {
+    font-family: 'Amarante', serif;
+    font-size: clamp(52px, 7vw, 88px);
+    line-height: 1.0;
+    letter-spacing: -0.01em;
+    margin-bottom: 8px;
+    opacity: 0;
+    animation: fadeUp 0.8s ease forwards 0.5s;
+  }
+  .hero-title-accent {
+    font-family: 'Amarante', serif;
+    font-size: clamp(52px, 7vw, 88px);
+    line-height: 1.0;
+    color: transparent;
+    -webkit-text-stroke: 1px var(--paper);
+    opacity: 0;
+    animation: fadeUp 0.8s ease forwards 0.65s;
+    display: block;
+    margin-bottom: 24px;
+  }
+
+  .hero-kanji-large {
+    font-family: 'Zen Kaku Gothic New', sans-serif;
+    font-size: clamp(80px, 12vw, 140px);
+    font-weight: 900;
+    color: transparent;
+    -webkit-text-stroke: 1px rgba(240,232,216,0.06);
+    position: absolute;
+    top: 50%;
+    left: -20px;
+    transform: translateY(-50%);
+    line-height: 1;
+    pointer-events: none;
+    z-index: 1;
+    user-select: none;
+  }
+
+  .hero-desc {
+    font-size: 14px;
+    font-weight: 300;
+    line-height: 1.8;
+    color: rgba(240,232,216,0.55);
+    max-width: 400px;
+    margin-bottom: 48px;
+    opacity: 0;
+    animation: fadeUp 0.8s ease forwards 0.8s;
+  }
+
+  .hero-actions {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    opacity: 0;
+    animation: fadeUp 0.8s ease forwards 1s;
+  }
+  .btn-primary {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--paper);
+    background: var(--red);
+    border: 1px solid var(--red);
+    padding: 14px 32px;
+    cursor: none;
+    text-decoration: none;
+    transition: background 0.3s, color 0.3s;
+    position: relative;
+    overflow: hidden;
+  }
+  .btn-primary::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: var(--paper);
+    transform: translateX(-101%);
+    transition: transform 0.3s ease;
+  }
+  .btn-primary:hover::before { transform: translateX(0); }
+  .btn-primary:hover { color: var(--ink); }
+  .btn-primary span { position: relative; z-index: 1; }
+
+  .btn-ghost {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: rgba(240,232,216,0.5);
+    background: transparent;
+    border: none;
+    padding: 14px 0;
+    cursor: none;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transition: color 0.3s;
+  }
+  .btn-ghost::after {
+    content: '→';
+    transition: transform 0.3s;
+  }
+  .btn-ghost:hover { color: var(--paper); }
+  .btn-ghost:hover::after { transform: translateX(6px); }
+
+  .hero-stats {
+    position: absolute;
+    bottom: 60px;
+    display: flex;
+    gap: 48px;
+    opacity: 0;
+    animation: fadeUp 0.8s ease forwards 1.2s;
+  }
+  .stat-item {}
+  .stat-number {
+    font-family: 'Amarante', serif;
+    font-size: 28px;
+    color: var(--paper);
+    display: block;
+  }
+  .stat-label {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.3em;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-top: 4px;
+  }
+
+  /* Right visual */
+  .hero-right {
+    position: relative;
+    overflow: hidden;
+  }
+  .hero-right::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, var(--ink) 0%, transparent 40%);
+    z-index: 2;
+  }
+
+  /* Abstract manga panel grid */
+  .manga-panels {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    grid-template-columns: 3fr 2fr;
+    grid-template-rows: 2fr 1fr 2fr;
+    gap: 3px;
+    background: #1a1010;
+    z-index: 1;
+  }
+  .panel {
+    background: var(--ink);
+    position: relative;
+    overflow: hidden;
+  }
+  .panel-1 {
+    grid-column: 1;
+    grid-row: 1 / 3;
+    background: linear-gradient(160deg, #1a0810 0%, #0d0d0f 60%);
+  }
+  .panel-2 {
+    grid-column: 2;
+    grid-row: 1;
+    background: linear-gradient(200deg, #1a0508 0%, #0d0d0f 70%);
+  }
+  .panel-3 {
+    grid-column: 2;
+    grid-row: 2;
+    background: var(--red-dim);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .panel-4 {
+    grid-column: 1 / 3;
+    grid-row: 3;
+    background: linear-gradient(90deg, #0f0d0d 0%, #150808 100%);
+  }
+  .panel-3-text {
+    font-family: 'Amarante', serif;
+    font-size: 11px;
+    letter-spacing: 0.3em;
+    color: rgba(240,232,216,0.6);
+    text-transform: uppercase;
+  }
+
+  /* Speed lines */
+  .speed-lines {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    z-index: 1;
+  }
+  .speed-lines::before {
+    content: '';
+    position: absolute;
+    top: 50%; left: 50%;
+    width: 200%; height: 200%;
+    transform: translate(-50%, -50%);
+    background: repeating-conic-gradient(
+      from 0deg at 50% 50%,
+      rgba(240,232,216,0.015) 0deg,
+      transparent 0.8deg,
+      transparent 4deg
+    );
+  }
+
+  /* Floating kanji */
+  .float-kanji {
+    position: absolute;
+    font-family: 'Zen Kaku Gothic New', sans-serif;
+    font-weight: 900;
+    color: transparent;
+    -webkit-text-stroke: 1px rgba(200,16,46,0.15);
+    pointer-events: none;
+    animation: floatKanji 8s ease-in-out infinite;
+  }
+  .float-kanji:nth-child(1) { font-size: 180px; top: 10%; right: 5%; animation-delay: 0s; }
+  .float-kanji:nth-child(2) { font-size: 100px; bottom: 15%; right: 30%; animation-delay: -3s; }
+  .float-kanji:nth-child(3) { font-size: 60px; top: 40%; right: 15%; animation-delay: -6s; }
+
+  @keyframes floatKanji {
+    0%, 100% { transform: translateY(0px) rotate(0deg); }
+    50% { transform: translateY(-20px) rotate(2deg); }
+  }
+
+  /* Diagonal red accent */
+  .red-slash {
+    position: absolute;
+    top: 0; right: 0;
+    width: 3px;
+    height: 60%;
+    background: var(--red);
+    transform-origin: top;
+    animation: slashIn 1s ease forwards 0.2s;
+    opacity: 0;
+  }
+  @keyframes slashIn {
+    from { opacity: 0; height: 0; }
+    to { opacity: 1; height: 60%; }
+  }
+
+  /* Corner markers */
+  .corner-tl, .corner-br {
+    position: absolute;
+    width: 20px; height: 20px;
+    z-index: 10;
+  }
+  .corner-tl {
+    top: 100px; left: 60px;
+    border-top: 1px solid rgba(240,232,216,0.2);
+    border-left: 1px solid rgba(240,232,216,0.2);
+  }
+  .corner-br {
+    bottom: 40px; right: 20px;
+    border-bottom: 1px solid rgba(240,232,216,0.2);
+    border-right: 1px solid rgba(240,232,216,0.2);
+  }
+
+  /* ===== MARQUEE ===== */
+  .marquee-wrap {
+    border-top: 1px solid rgba(240,232,216,0.08);
+    border-bottom: 1px solid rgba(240,232,216,0.08);
+    padding: 14px 0;
+    overflow: hidden;
+    position: relative;
+    background: rgba(200,16,46,0.04);
+  }
+  .marquee-track {
+    display: flex;
+    width: max-content;
+    animation: marquee 20s linear infinite;
+  }
+  .marquee-item {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.3em;
+    color: var(--muted);
+    text-transform: uppercase;
+    white-space: nowrap;
+    padding: 0 40px;
+    display: flex;
+    align-items: center;
+    gap: 40px;
+  }
+  .marquee-item::after {
+    content: '✦';
+    color: var(--red);
+    font-size: 8px;
+  }
+  @keyframes marquee {
+    from { transform: translateX(0); }
+    to { transform: translateX(-50%); }
+  }
+
+  /* ===== COMMUNITY SECTION ===== */
+  .community {
+    padding: 120px 80px;
+    position: relative;
+  }
+  .section-label {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.4em;
+    color: var(--red);
+    text-transform: uppercase;
+    margin-bottom: 60px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  .section-label::before {
+    content: '';
+    width: 32px; height: 1px;
+    background: var(--red);
+  }
+
+  .community-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1px;
+    background: rgba(240,232,216,0.06);
+    border: 1px solid rgba(240,232,216,0.06);
+  }
+  .community-card {
+    background: var(--ink);
+    padding: 48px 40px;
+    position: relative;
+    overflow: hidden;
+    transition: background 0.4s;
+  }
+  .community-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 2px;
+    background: var(--red);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.4s ease;
+  }
+  .community-card:hover { background: #120808; }
+  .community-card:hover::before { transform: scaleX(1); }
+
+  .card-number {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.3em;
+    color: rgba(240,232,216,0.15);
+    margin-bottom: 32px;
+  }
+  .card-icon {
+    font-size: 28px;
+    margin-bottom: 20px;
+    display: block;
+  }
+  .card-title {
+    font-family: 'Amarante', serif;
+    font-size: 22px;
+    margin-bottom: 16px;
+    color: var(--paper);
+  }
+  .card-desc {
+    font-size: 13px;
+    font-weight: 300;
+    line-height: 1.8;
+    color: rgba(240,232,216,0.4);
+  }
+
+  /* ===== FEATURED SECTION ===== */
+  .featured {
+    padding: 0 80px 120px;
+  }
+  .featured-header {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    margin-bottom: 48px;
+  }
+  .featured-title {
+    font-family: 'Amarante', serif;
+    font-size: clamp(36px, 4vw, 54px);
+    line-height: 1.1;
+  }
+  .featured-title em {
+    font-style: normal;
+    color: transparent;
+    -webkit-text-stroke: 1px var(--paper);
+  }
+  .view-all {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.3em;
+    color: var(--muted);
+    text-transform: uppercase;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transition: color 0.3s;
+    padding-bottom: 4px;
+  }
+  .view-all:hover { color: var(--paper); }
+
+  .anime-row {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr 1fr;
+    gap: 2px;
+    background: rgba(240,232,216,0.04);
+  }
+  .anime-card {
+    position: relative;
+    overflow: hidden;
+    aspect-ratio: 2/3;
+    background: #111013;
+    cursor: none;
+  }
+  .anime-card:first-child { aspect-ratio: auto; min-height: 400px; }
+  .anime-card-inner {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    padding: 24px;
+    background: linear-gradient(0deg, rgba(13,13,15,0.95) 0%, transparent 60%);
+    transition: padding 0.3s;
+  }
+  .anime-card:hover .anime-card-inner { padding-bottom: 32px; }
+  .anime-genre {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.3em;
+    color: var(--red);
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .anime-title {
+    font-family: 'Amarante', serif;
+    font-size: 18px;
+    color: var(--paper);
+    margin-bottom: 4px;
+  }
+  .anime-card:first-child .anime-title { font-size: 26px; }
+  .anime-ep {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.2em;
+    color: rgba(240,232,216,0.35);
+  }
+
+  /* Abstract bg patterns for cards */
+  .anime-card-bg {
+    position: absolute;
+    inset: 0;
+    opacity: 0.5;
+    transition: opacity 0.4s, transform 0.6s;
+  }
+  .anime-card:hover .anime-card-bg { opacity: 0.7; transform: scale(1.05); }
+
+  .bg-1 { background: radial-gradient(ellipse at 70% 30%, #3d0a1a 0%, #0d0d0f 70%); }
+  .bg-2 { background: radial-gradient(ellipse at 30% 70%, #0a1a3d 0%, #0d0d0f 70%); }
+  .bg-3 { background: radial-gradient(ellipse at 50% 50%, #1a1a0a 0%, #0d0d0f 70%); }
+  .bg-4 { background: radial-gradient(ellipse at 80% 20%, #0a3d1a 0%, #0d0d0f 70%); }
+
+  .card-abstract {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Zen Kaku Gothic New', sans-serif;
+    font-weight: 900;
+    font-size: 140px;
+    color: transparent;
+    -webkit-text-stroke: 1px rgba(240,232,216,0.05);
+    user-select: none;
+  }
+
+  /* ===== FOOTER STRIP ===== */
+  .footer-strip {
+    border-top: 1px solid rgba(240,232,216,0.08);
+    padding: 40px 80px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .footer-logo {
+    font-family: 'Amarante', serif;
+    font-size: 18px;
+    color: rgba(240,232,216,0.3);
+  }
+  .footer-logo span { color: var(--red); }
+  .footer-copy {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.3em;
+    color: rgba(240,232,216,0.15);
+    text-transform: uppercase;
+  }
+
+  /* ===== ANIMATIONS ===== */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(30px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Responsive */
+  @media (max-width: 900px) {
+    .hero { grid-template-columns: 1fr; }
+    .hero-right { display: none; }
+    .hero-left { padding: 120px 32px 80px; }
+    nav { padding: 20px 32px; }
+    .nav-links { display: none; }
+    .community { padding: 80px 32px; }
+    .community-grid { grid-template-columns: 1fr; }
+    .featured { padding: 0 32px 80px; }
+    .anime-row { grid-template-columns: 1fr 1fr; }
+    .footer-strip { padding: 32px; flex-direction: column; gap: 16px; text-align: center; }
+  }
+</style>
+</head>
+<body>
+
+<div class="cursor" id="cursor"></div>
+<div class="cursor-ring" id="cursorRing"></div>
+
+<!-- NAV -->
+<nav>
+  <a href="#" class="nav-logo">
+    Anime<span>Verse</span>
+    <span class="logo-kanji">アニメバース</span>
+  </a>
+  <ul class="nav-links">
+    <li><a href="#">Discover</a></li>
+    <li><a href="#">Seasonal</a></li>
+    <li><a href="#">Community</a></li>
+    <li><a href="#">Scene ID</a></li>
+  </ul>
+  <button class="nav-cta">Enter</button>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-kanji-large">世界</div>
+  <div class="corner-tl"></div>
+  <div class="corner-br"></div>
+
+  <!-- Vertical JP sidebar -->
+  <div class="hero-jp-column">
+    <span class="hero-jp-text">アニメ・コミュニティ — 発見と探索</span>
+  </div>
+
+  <div class="hero-left">
+    <span class="hero-eyebrow">アニメバース — Community Hub</span>
+    <h1 class="hero-title">Enter the</h1>
+    <span class="hero-title-accent">World</span>
+    <p class="hero-desc">
+      Discover trending titles, identify any scene, build your collection. 
+      A gateway for those who live and breathe anime.
+    </p>
+    <div class="hero-actions">
+      <a href="#" class="btn-primary"><span>Start Exploring</span></a>
+      <a href="#" class="btn-ghost">Identify a Scene</a>
+    </div>
+    <div class="hero-stats">
+      <div class="stat-item">
+        <span class="stat-number">12k+</span>
+        <span class="stat-label">Titles indexed</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-number">98%</span>
+        <span class="stat-label">Scene accuracy</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-number">340k</span>
+        <span class="stat-label">Community members</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right panel -->
+  <div class="hero-right">
+    <div class="speed-lines"></div>
+    <div class="manga-panels">
+      <div class="panel panel-1"></div>
+      <div class="panel panel-2"></div>
+      <div class="panel panel-3">
+        <span class="panel-3-text">Now Airing</span>
+      </div>
+      <div class="panel panel-4"></div>
+    </div>
+    <div class="float-kanji">界</div>
+    <div class="float-kanji">火</div>
+    <div class="float-kanji">力</div>
+    <div class="red-slash"></div>
+  </div>
+</section>
+
+<!-- MARQUEE -->
+<div class="marquee-wrap">
+  <div class="marquee-track">
+    <div class="marquee-item">Trending This Season</div>
+    <div class="marquee-item">Scene Identifier</div>
+    <div class="marquee-item">Build Your Library</div>
+    <div class="marquee-item">Community Reviews</div>
+    <div class="marquee-item">New Episodes Daily</div>
+    <div class="marquee-item">アニメ発見</div>
+    <div class="marquee-item">Trending This Season</div>
+    <div class="marquee-item">Scene Identifier</div>
+    <div class="marquee-item">Build Your Library</div>
+    <div class="marquee-item">Community Reviews</div>
+    <div class="marquee-item">New Episodes Daily</div>
+    <div class="marquee-item">アニメ発見</div>
+  </div>
+</div>
+
+<!-- COMMUNITY SECTION -->
+<section class="community">
+  <div class="section-label">What We Offer</div>
+  <div class="community-grid">
+    <div class="community-card">
+      <div class="card-number">01 —</div>
+      <span class="card-icon">⛩️</span>
+      <h3 class="card-title">Discover & Explore</h3>
+      <p class="card-desc">Browse thousands of titles filtered by genre, season, studio, or mood. Find your next obsession.</p>
+    </div>
+    <div class="community-card">
+      <div class="card-number">02 —</div>
+      <span class="card-icon">🎴</span>
+      <h3 class="card-title">Scene Identifier</h3>
+      <p class="card-desc">Drop a screenshot from any scene and we'll identify the anime, episode, and timestamp in seconds.</p>
+    </div>
+    <div class="community-card">
+      <div class="card-number">03 —</div>
+      <span class="card-icon">📚</span>
+      <h3 class="card-title">Your Library</h3>
+      <p class="card-desc">Track what you've watched, what you're watching, and what's next. Your collection, your way.</p>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURED -->
+<section class="featured">
+  <div class="featured-header">
+    <h2 class="featured-title">Trending<br><em>Right Now</em></h2>
+    <a href="#" class="view-all">View all → </a>
+  </div>
+  <div class="anime-row">
+    <div class="anime-card">
+      <div class="anime-card-bg bg-1"></div>
+      <div class="card-abstract">鬼</div>
+      <div class="anime-card-inner">
+        <span class="anime-genre">Action · Supernatural</span>
+        <h3 class="anime-title">Demon Slayer</h3>
+        <span class="anime-ep">Season 4 · Ep 12</span>
+      </div>
+    </div>
+    <div class="anime-card">
+      <div class="anime-card-bg bg-2"></div>
+      <div class="card-abstract">攻</div>
+      <div class="anime-card-inner">
+        <span class="anime-genre">Sci-Fi</span>
+        <h3 class="anime-title">Ghost in the Shell</h3>
+        <span class="anime-ep">Classic</span>
+      </div>
+    </div>
+    <div class="anime-card">
+      <div class="anime-card-bg bg-3"></div>
+      <div class="card-abstract">夢</div>
+      <div class="anime-card-inner">
+        <span class="anime-genre">Fantasy</span>
+        <h3 class="anime-title">Frieren</h3>
+        <span class="anime-ep">Ep 28</span>
+      </div>
+    </div>
+    <div class="anime-card">
+      <div class="anime-card-bg bg-4"></div>
+      <div class="card-abstract">剣</div>
+      <div class="anime-card-inner">
+        <span class="anime-genre">Adventure</span>
+        <h3 class="anime-title">Vinland Saga</h3>
+        <span class="anime-ep">Season 2</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER STRIP -->
+<footer class="footer-strip">
+  <div class="footer-logo">Anime<span>Verse</span></div>
+  <div class="footer-copy">
+    Designed by Rajat Sodhi<br>
+    © 2026 AnimeVerse — アニメバース — All rights reserved
+  </div>
+</footer>
+
+<script>
+  // Custom cursor
+  const cursor = document.getElementById('cursor');
+  const ring = document.getElementById('cursorRing');
+  let mx = 0, my = 0, rx = 0, ry = 0;
+
+  document.addEventListener('mousemove', e => {
+    mx = e.clientX; my = e.clientY;
+    cursor.style.left = mx + 'px';
+    cursor.style.top = my + 'px';
+  });
+
+  function animateRing() {
+    rx += (mx - rx) * 0.12;
+    ry += (my - ry) * 0.12;
+    ring.style.left = rx + 'px';
+    ring.style.top = ry + 'px';
+    requestAnimationFrame(animateRing);
+  }
+  animateRing();
+
+  // Hover effects on interactive elements
+  document.querySelectorAll('a, button, .community-card, .anime-card').forEach(el => {
+    el.addEventListener('mouseenter', () => {
+      cursor.style.width = '20px';
+      cursor.style.height = '20px';
+      ring.style.width = '60px';
+      ring.style.height = '60px';
+      ring.style.opacity = '0.3';
+    });
+    el.addEventListener('mouseleave', () => {
+      cursor.style.width = '12px';
+      cursor.style.height = '12px';
+      ring.style.width = '36px';
+      ring.style.height = '36px';
+      ring.style.opacity = '0.5';
+    });
+  });
+
+  // Scroll reveal
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.style.opacity = '1';
+        entry.target.style.transform = 'translateY(0)';
+      }
+    });
+  }, { threshold: 0.1 });
+
+  document.querySelectorAll('.community-card, .anime-card').forEach(el => {
+    el.style.opacity = '0';
+    el.style.transform = 'translateY(24px)';
+    el.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+    observer.observe(el);
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,317 @@
+
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AnimeVerse — Enter the World</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Amarante&family=Share+Tech+Mono&family=Zen+Kaku+Gothic+New:wght@300;400;700;900&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+    <script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#c8102e",
+                        "primary-dim": "#7a0a1c",
+                        "background-light": "#1a1010",
+                        "background-dark": "#0d0d0f",
+                        "surface-dark": "#1a0810",
+                        "accent-purple": "#d4a843",
+                        "paper": "#f0e8d8",
+                        "muted": "#4a4040",
+                        "ink": "#0d0d0f",
+                    },
+                    fontFamily: {
+                        "heading": ["Amarante", "serif"],
+                        "mono": ["Share Tech Mono", "monospace"],
+                        "body": ["Zen Kaku Gothic New", "sans-serif"],
+                        "sub": ["Share Tech Mono", "monospace"],
+                    },
+                    borderRadius: {
+                        "none": "0",
+                        "DEFAULT": "0",
+                        "sm": "0",
+                        "md": "0",
+                        "lg": "0",
+                        "xl": "0",
+                        "2xl": "0",
+                        "3xl": "0",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+    <style>
+        :root {
+            --ink: #0d0d0f;
+            --paper: #f0e8d8;
+            --red: #c8102e;
+            --red-dim: #7a0a1c;
+            --gold: #d4a843;
+            --muted: #4a4040;
+            --scan: rgba(240,232,216,0.03);
+        }
+
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+        body {
+            font-family: 'Zen Kaku Gothic New', sans-serif;
+            background-color: #0d0d0f;
+            color: #f0e8d8;
+            cursor: none;
+        }
+        h1, h2 { font-family: 'Amarante', serif; }
+        h3, h4, h5, h6 { font-family: 'Zen Kaku Gothic New', sans-serif; }
+
+        /* Scanline overlay */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background: repeating-linear-gradient(
+                0deg,
+                var(--scan) 0px,
+                var(--scan) 1px,
+                transparent 1px,
+                transparent 3px
+            );
+            pointer-events: none;
+            z-index: 10000;
+        }
+
+        /* Noise grain */
+        body::after {
+            content: '';
+            position: fixed;
+            inset: -50%;
+            width: 200%; height: 200%;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+            pointer-events: none;
+            z-index: 9999;
+            opacity: 0.4;
+            animation: grain 0.5s steps(2) infinite;
+        }
+        @keyframes grain {
+            0%,100% { transform: translate(0,0); }
+            25% { transform: translate(-2%,1%); }
+            50% { transform: translate(1%,-2%); }
+            75% { transform: translate(2%,2%); }
+        }
+
+        /* Custom cursor */
+        .cursor-dot {
+            position: fixed;
+            width: 12px; height: 12px;
+            background: var(--red);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 10001;
+            transform: translate(-50%, -50%);
+            transition: transform 0.1s ease, width 0.2s, height 0.2s;
+            mix-blend-mode: difference;
+        }
+        .cursor-ring {
+            position: fixed;
+            width: 36px; height: 36px;
+            border: 1px solid var(--paper);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 10001;
+            transform: translate(-50%, -50%);
+            transition: transform 0.15s ease, width 0.3s, height 0.3s, opacity 0.3s;
+            opacity: 0.5;
+        }
+
+        /* Glass header adapted for ink theme */
+        .glass-effect {
+            background: rgba(13, 13, 15, 0.92);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(240, 232, 216, 0.06);
+        }
+
+        .hero-gradient {
+            background: linear-gradient(0deg, #0d0d0f 0%, rgba(13, 13, 15, 0.4) 50%, rgba(13, 13, 15, 0.1) 100%);
+        }
+
+        /* Marquee */
+        @keyframes marqueeScroll {
+            from { transform: translateX(0); }
+            to { transform: translateX(-50%); }
+        }
+        .marquee-track {
+            animation: marqueeScroll 20s linear infinite;
+        }
+
+        /* Float kanji */
+        @keyframes floatKanji {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-20px) rotate(2deg); }
+        }
+        .float-kanji {
+            animation: floatKanji 8s ease-in-out infinite;
+        }
+
+        /* Fade up animation */
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-up {
+            animation: fadeUp 0.8s ease forwards;
+        }
+
+        /* Red slash line animation */
+        @keyframes slashIn {
+            from { opacity: 0; height: 0; }
+            to { opacity: 1; height: 60%; }
+        }
+
+        /* Speed lines */
+        .speed-lines::before {
+            content: '';
+            position: absolute;
+            top: 50%; left: 50%;
+            width: 200%; height: 200%;
+            transform: translate(-50%, -50%);
+            background: repeating-conic-gradient(
+                from 0deg at 50% 50%,
+                rgba(240,232,216,0.015) 0deg,
+                transparent 0.8deg,
+                transparent 4deg
+            );
+        }
+
+        /* Category carousel */
+        @keyframes categoryMarquee {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+        }
+        .category-marquee {
+            animation: categoryMarquee 22s linear infinite;
+            will-change: transform;
+        }
+        .category-marquee-paused {
+            animation-play-state: paused;
+        }
+
+        @media (max-width: 768px) {
+            .glass-effect {
+                background: rgba(13, 13, 15, 0.96);
+                padding-top: env(safe-area-inset-top, 0);
+            }
+        }
+
+        video::backdrop { background-color: black; }
+        .video-overlay-gradient { background: linear-gradient(to top, rgba(0,0,0,0.8) 0%, transparent 40%); }
+
+        /* Selection color */
+        ::selection {
+            background: var(--red);
+            color: var(--paper);
+        }
+    </style>
+</head>
+<body class="bg-background-dark text-paper overflow-x-hidden">
+    <div class="cursor-dot" id="cursorDot"></div>
+    <div class="cursor-ring" id="cursorRing"></div>
+
+    <div id="root">
+      <div class="flex h-screen items-center justify-center bg-ink">
+        <div class="flex flex-col items-center gap-4">
+          <div class="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+          <p class="text-primary font-bold font-mono text-xs tracking-widest uppercase">Loading AnimeVerse...</p>
+          <p id="load-hint" class="text-muted text-sm mt-4 hidden font-mono">If this doesn't change, open DevTools (F12) for errors.</p>
+        </div>
+      </div>
+    </div>
+<script type="module" src="/index.tsx"></script>
+<script>
+  // Custom cursor
+  (function() {
+    const dot = document.getElementById('cursorDot');
+    const ring = document.getElementById('cursorRing');
+    if (!dot || !ring) return;
+    let mx = 0, my = 0, rx = 0, ry = 0;
+
+    document.addEventListener('mousemove', function(e) {
+      mx = e.clientX; my = e.clientY;
+      dot.style.left = mx + 'px';
+      dot.style.top = my + 'px';
+    });
+
+    function animateRing() {
+      rx += (mx - rx) * 0.12;
+      ry += (my - ry) * 0.12;
+      ring.style.left = rx + 'px';
+      ring.style.top = ry + 'px';
+      requestAnimationFrame(animateRing);
+    }
+    animateRing();
+
+    document.addEventListener('mouseover', function(e) {
+      var t = e.target;
+      if (t && (t.closest('a') || t.closest('button') || t.closest('[role="button"]') || t.closest('.cursor-grow'))) {
+        dot.style.width = '20px';
+        dot.style.height = '20px';
+        ring.style.width = '60px';
+        ring.style.height = '60px';
+        ring.style.opacity = '0.3';
+      }
+    });
+    document.addEventListener('mouseout', function(e) {
+      var t = e.target;
+      if (t && (t.closest('a') || t.closest('button') || t.closest('[role="button"]') || t.closest('.cursor-grow'))) {
+        dot.style.width = '12px';
+        dot.style.height = '12px';
+        ring.style.width = '36px';
+        ring.style.height = '36px';
+        ring.style.opacity = '0.5';
+      }
+    });
+  })();
+</script>
+<script>
+  window.addEventListener('error', function(e) {
+    if (e.message && (e.message.indexOf('index.tsx') !== -1 || e.message.indexOf('Failed to fetch') !== -1)) {
+      var r = document.getElementById('root');
+      if (r && r.innerText.indexOf('Loading AnimeVerse') !== -1) {
+        r.innerHTML = '<div class="flex h-screen items-center justify-center bg-ink p-6"><div class="flex flex-col items-center gap-4 max-w-md text-center"><p class="text-primary font-bold text-xl font-heading">Script load failed</p><p class="text-muted text-sm font-mono">Ensure the dev server is running: <code class="bg-white/10 px-2 py-1">npm run dev</code></p><button type="button" onclick="location.reload()" class="mt-4 px-6 py-2 bg-primary text-paper font-bold font-mono text-xs tracking-widest uppercase">Retry</button></div></div>';
+      }
+    }
+  }, true);
+</script>
+<script>
+  (function(){
+    function isStillStaticLoading() {
+      var r = document.getElementById('root');
+      if (!r || !r.querySelector) return false;
+      var first = r.firstElementChild;
+      return first && first.querySelector && first.querySelector('.animate-spin') && r.innerText.indexOf('Loading AnimeVerse') !== -1;
+    }
+    function showScriptFailed() {
+      var r = document.getElementById('root');
+      if (!r || !isStillStaticLoading()) return;
+      if (window.__moduleLoadError) return;
+      var statusJson = typeof window.__scriptStatus !== 'undefined' ? JSON.stringify(window.__scriptStatus) : '{}';
+      r.innerHTML = '<div class="flex h-screen items-center justify-center bg-ink p-6"><div class="flex flex-col items-center gap-4 max-w-md text-center"><p class="text-primary font-bold text-xl font-heading">App script didn\'t load</p><p class="text-muted text-sm font-mono">Open <strong>http://localhost:3000</strong> in your browser.</p><p class="text-muted/50 text-xs font-mono">Run: <code class="bg-white/10 px-2 py-1">npm run dev</code></p><button type="button" onclick="location.reload()" class="mt-4 px-6 py-2 bg-primary text-paper font-bold font-mono text-xs tracking-widest uppercase">Retry</button></div></div>';
+    }
+    setTimeout(function(){ var r=document.getElementById('root'); var h=document.getElementById('load-hint'); if(h&&r&&r.querySelector('.animate-spin')) h.classList.remove('hidden'); }, 6000);
+    setTimeout(function() {
+      fetch('/index.tsx', { method: 'HEAD' }).then(function(res) {
+        window.__scriptStatus = { ok: res.ok, status: res.status };
+        if (!res.ok) showScriptFailed();
+      }).catch(function(e) {
+        window.__scriptStatus = { ok: false, error: e.message };
+        showScriptFailed();
+      });
+    }, 8000);
+  })();
+</script>
+</body>
+</html>

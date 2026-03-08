@@ -1,0 +1,7 @@
+{
+  "name": "AnimeVerse Discovery",
+  "description": "A premium anime discovery portal with trending shows, category filters, and AI-powered anime identification from images.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
