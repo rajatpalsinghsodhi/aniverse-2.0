@@ -1,6 +1,6 @@
-
 import React from 'react';
 import { Anime } from '../types';
+import { SlideButton } from './SlideButton';
 
 interface HeroProps {
   featured: Anime | null;
@@ -81,23 +81,26 @@ const Hero: React.FC<HeroProps> = ({ featured, onWatch }) => {
             </div>
             
             <div className="flex flex-wrap items-center gap-4 mt-2">
-              <button 
+              <SlideButton
                 onClick={() => onWatch(featured.mal_id)}
-                className="relative font-mono text-[12px] tracking-[0.2em] uppercase text-paper bg-primary border border-primary px-6 py-3 overflow-hidden group/btn"
+                className="relative font-mono text-[12px] tracking-[0.2em] uppercase text-paper bg-primary border border-primary px-6 py-3 overflow-hidden group active:outline-none"
               >
-                <span className="absolute inset-0 bg-paper -translate-x-full group-hover/btn:translate-x-0 transition-transform duration-300" />
-                <span className="relative z-[1] group-hover/btn:text-ink transition-colors flex items-center gap-2">
-                  <span className="material-symbols-outlined !text-lg">info</span>
-                  View Details
-                </span>
-              </button>
+                <span className="material-symbols-outlined !text-lg">info</span>
+                View Details
+              </SlideButton>
               <button 
-                onClick={() => onWatch(featured.mal_id)}
-                className="font-mono text-[12px] tracking-[0.2em] uppercase text-paper/50 bg-transparent border-none py-3 flex items-center gap-2.5 hover:text-paper transition-colors group/ghost"
+                onClick={() => {
+                  if (typeof window !== 'undefined' && window.matchMedia('(pointer: coarse)').matches) {
+                    setTimeout(() => onWatch(featured.mal_id), 350);
+                  } else {
+                    onWatch(featured.mal_id);
+                  }
+                }}
+                className="font-mono text-[12px] tracking-[0.2em] uppercase text-paper/50 bg-transparent border-none py-3 flex items-center gap-2.5 hover:text-paper active:text-paper transition-colors group/ghost"
               >
                 <span className="material-symbols-outlined !text-lg">add</span>
                 Add to Library
-                <span className="transition-transform group-hover/ghost:translate-x-1">→</span>
+                <span className="transition-transform group-hover/ghost:translate-x-1 group-active/ghost:translate-x-1">→</span>
               </button>
             </div>
           </div>

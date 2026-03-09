@@ -208,7 +208,7 @@ const IdentificationModal: React.FC<IdentificationModalProps> = ({ onClose, onVi
                         : 'bg-paper/[0.01] border-paper/[0.06]'
                     }`}
                   >
-                    <div className="absolute top-0 left-0 w-full h-[2px] bg-primary origin-left scale-x-0 group-hover:scale-x-100 transition-transform" />
+                    <div className="absolute top-0 left-0 w-full h-[2px] bg-primary origin-left scale-x-0 group-hover:scale-x-100 group-active:scale-x-100 transition-transform" />
                     
                     {isTopResult && result.video && (
                       <video

@@ -114,7 +114,7 @@ const MyLibrary: React.FC<MyLibraryProps> = ({ library, onRemove, onUpdateStatus
               >
                 <AnimeCard anime={anime} onWatch={onWatch} />
                 
-                <div className="absolute top-4 right-4 z-20 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="absolute top-4 right-4 z-20 flex flex-col gap-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                   <button 
                     onClick={() => onRemove(anime.mal_id)}
                     className="p-2 bg-red-600 text-paper shadow-lg hover:brightness-110 transition-all"

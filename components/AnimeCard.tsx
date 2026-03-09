@@ -1,6 +1,8 @@
 
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Anime } from '../types';
+
+const LONG_PRESS_MS = 400;
 
 interface AnimeCardProps {
   anime: Anime;
@@ -8,9 +10,81 @@ interface AnimeCardProps {
 }
 
 const AnimeCard: React.FC<AnimeCardProps & { rank?: number }> = ({ anime, onWatch, rank }) => {
+  const [showInfoOverlay, setShowInfoOverlay] = useState(false);
+  const isTouchRef = useRef(false);
+  const pressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const cardRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    isTouchRef.current = window.matchMedia('(pointer: coarse)').matches;
+    const mq = window.matchMedia('(pointer: coarse)');
+    const handler = () => { isTouchRef.current = mq.matches; };
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, []);
+
+  useEffect(() => {
+    if (!isTouchRef.current) return;
+    const card = cardRef.current;
+    if (!card) return;
+
+    const handleStart = (e: TouchEvent) => {
+      pressTimerRef.current = setTimeout(() => {
+        pressTimerRef.current = null;
+        setShowInfoOverlay(true);
+      }, LONG_PRESS_MS);
+    };
+    const handleEnd = (e: TouchEvent) => {
+      if (pressTimerRef.current) {
+        clearTimeout(pressTimerRef.current);
+        pressTimerRef.current = null;
+      } else {
+        e.preventDefault();
+      }
+    };
+    const handleCancel = () => {
+      if (pressTimerRef.current) {
+        clearTimeout(pressTimerRef.current);
+        pressTimerRef.current = null;
+      }
+    };
+
+    card.addEventListener('touchstart', handleStart, { passive: true });
+    card.addEventListener('touchend', handleEnd, { passive: false });
+    card.addEventListener('touchcancel', handleCancel, { passive: true });
+
+    const dismissOutside = (e: MouseEvent | TouchEvent) => {
+      const target = e.target as Node;
+      if (card && !card.contains(target)) setShowInfoOverlay(false);
+    };
+    document.addEventListener('click', dismissOutside);
+    document.addEventListener('touchstart', dismissOutside, { passive: true });
+
+    return () => {
+      card.removeEventListener('touchstart', handleStart);
+      card.removeEventListener('touchend', handleEnd);
+      card.removeEventListener('touchcancel', handleCancel);
+      document.removeEventListener('click', dismissOutside);
+      document.removeEventListener('touchstart', dismissOutside);
+    };
+  }, []);
+
+  const handleClick = (e: React.MouseEvent) => {
+    if (showInfoOverlay && isTouchRef.current) {
+      setShowInfoOverlay(false);
+      e.preventDefault();
+      e.stopPropagation();
+    } else {
+      onWatch(anime.mal_id);
+    }
+  };
+
+  const overlayVisible = showInfoOverlay || undefined;
+
   return (
     <div 
-      onClick={() => onWatch(anime.mal_id)}
+      ref={cardRef}
+      onClick={handleClick}
       className="w-full group cursor-grow relative overflow-hidden"
     >
       <div className="relative aspect-[2/3] overflow-hidden mb-3 border border-paper/[0.06]">
@@ -33,9 +107,17 @@ const AnimeCard: React.FC<AnimeCardProps & { rank?: number }> = ({ anime, onWatc
           {anime.score || 'N/A'}
         </div>
 
-        {/* Hover overlay */}
-        <div className="absolute inset-0 bg-ink/0 group-hover:bg-ink/50 transition-all flex items-center justify-center opacity-0 group-hover:opacity-100">
-          <div className="bg-paper/10 backdrop-blur-sm p-3 border border-paper/20 transform scale-75 group-hover:scale-100 transition-transform">
+        {/* Hover overlay (desktop) or long-press overlay (touch) */}
+        <div 
+          className={`absolute inset-0 transition-all flex items-center justify-center ${
+            overlayVisible 
+              ? 'bg-ink/50 opacity-100' 
+              : 'bg-ink/0 opacity-0 group-hover:bg-ink/50 group-hover:opacity-100'
+          }`}
+        >
+          <div className={`bg-paper/10 backdrop-blur-sm p-3 border border-paper/20 transition-transform ${
+            overlayVisible ? 'scale-100' : 'scale-75 group-hover:scale-100'
+          }`}>
             <span className="material-symbols-outlined text-paper text-2xl">info</span>
           </div>
         </div>

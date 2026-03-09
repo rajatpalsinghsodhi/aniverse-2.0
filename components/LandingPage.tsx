@@ -1,8 +1,8 @@
-
 import React, { useRef, useState, useEffect } from 'react';
 import { motion, useInView } from 'framer-motion';
 import { Anime } from '../types';
 import { jikanService } from '../services/jikanService';
+import { SlideButton } from './SlideButton';
 
 interface LandingPageProps {
   onEnter: () => void;
@@ -66,6 +66,8 @@ const AUDIENCES = [
   { icon: 'psychology', label: 'The Curious', desc: '"What anime is this from?" — answered in seconds.' },
   { icon: 'group', label: 'Friend Groups', desc: 'Share discoveries and build watch lists together.', comingSoon: true },
 ];
+
+const TOUCH_ANIM_DURATION_MS = 350;
 
 const LandingPage: React.FC<LandingPageProps> = ({ onEnter, onOpenIdentifier }) => {
   const [heroAnime, setHeroAnime] = useState<Anime[]>([]);
@@ -143,8 +145,14 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnter, onOpenIdentifier }) 
           </li>
         </ul>
         <button
-          onClick={onEnter}
-          className="font-mono text-[12px] tracking-[0.2em] uppercase text-ink bg-paper border-none px-6 py-2.5 hover:bg-primary hover:text-paper transition-colors"
+          onClick={() => {
+            if (typeof window !== 'undefined' && window.matchMedia('(pointer: coarse)').matches) {
+              setTimeout(onEnter, TOUCH_ANIM_DURATION_MS);
+            } else {
+              onEnter();
+            }
+          }}
+          className="font-mono text-[12px] tracking-[0.2em] uppercase text-ink bg-paper border-none px-6 py-2.5 hover:bg-primary hover:text-paper active:bg-primary active:text-paper transition-colors"
         >
           Enter
         </button>
@@ -209,19 +217,18 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnter, onOpenIdentifier }) 
           </motion.p>
 
           <motion.div variants={fadeUp} custom={3} className="flex gap-4 items-center">
-            <button
+            <SlideButton
               onClick={onEnter}
-              className="relative font-mono text-[12px] tracking-[0.2em] uppercase text-paper bg-primary border border-primary px-8 py-3.5 overflow-hidden group"
+              className="relative font-mono text-[12px] tracking-[0.2em] uppercase text-paper bg-primary border border-primary px-8 py-3.5 overflow-hidden group active:outline-none"
             >
-              <span className="absolute inset-0 bg-paper -translate-x-full group-hover:translate-x-0 transition-transform duration-300" />
-              <span className="relative z-[1] group-hover:text-ink transition-colors">Start Exploring</span>
-            </button>
+              Start Exploring
+            </SlideButton>
             <button
               onClick={onOpenIdentifier}
-              className="font-mono text-[12px] tracking-[0.2em] uppercase text-paper/50 bg-transparent border-none px-0 py-3.5 flex items-center gap-2.5 hover:text-paper transition-colors group"
+              className="font-mono text-[12px] tracking-[0.2em] uppercase text-paper/50 bg-transparent border-none px-0 py-3.5 flex items-center gap-2.5 hover:text-paper active:text-paper transition-colors group"
             >
               Identify a Scene
-              <span className="transition-transform group-hover:translate-x-1.5">→</span>
+              <span className="transition-transform group-hover:translate-x-1.5 group-active:translate-x-1.5">→</span>
             </button>
           </motion.div>
 
@@ -414,9 +421,9 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnter, onOpenIdentifier }) 
               key={f.title}
               variants={scaleIn}
               custom={i}
-              className="bg-ink p-6 md:p-12 relative overflow-hidden group cursor-grow hover:bg-[#120808] transition-colors"
+              className="bg-ink p-6 md:p-12 relative overflow-hidden group cursor-grow hover:bg-[#120808] active:bg-[#120808] transition-colors"
             >
-              <div className="absolute top-0 left-0 w-full h-[2px] bg-primary origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-400" />
+              <div className="absolute top-0 left-0 w-full h-[2px] bg-primary origin-left scale-x-0 group-hover:scale-x-100 group-active:scale-x-100 transition-transform duration-400" />
               <div className="font-mono text-[12px] tracking-[0.3em] text-paper/15 mb-8">{f.number} —</div>
               <div className="w-10 h-px bg-primary mb-5" />
               <h3 className="font-heading text-[22px] mb-4 text-paper">{f.title}</h3>
@@ -458,15 +465,14 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnter, onOpenIdentifier }) 
                   </li>
                 ))}
               </motion.ul>
-              <motion.button
-                variants={fadeUp}
-                custom={4}
-                onClick={onOpenIdentifier}
-                className="relative font-mono text-[12px] tracking-[0.2em] uppercase text-paper bg-primary border border-primary px-8 py-3.5 overflow-hidden group"
-              >
-                <span className="absolute inset-0 bg-paper -translate-x-full group-hover:translate-x-0 transition-transform duration-300" />
-                <span className="relative z-[1] group-hover:text-ink transition-colors">Try It Now</span>
-              </motion.button>
+              <motion.div variants={fadeUp} custom={4}>
+                <SlideButton
+                  onClick={onOpenIdentifier}
+                  className="relative font-mono text-[12px] tracking-[0.2em] uppercase text-paper bg-primary border border-primary px-8 py-3.5 overflow-hidden group active:outline-none block w-fit"
+                >
+                  Try It Now
+                </SlideButton>
+              </motion.div>
             </div>
 
             {/* Visual mockup */}
@@ -520,9 +526,9 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnter, onOpenIdentifier }) 
               key={a.label}
               variants={fadeUp}
               custom={i}
-              className={`bg-ink p-6 group cursor-grow hover:bg-[#120808] transition-colors relative overflow-hidden ${a.comingSoon ? 'opacity-60' : ''}`}
+              className={`bg-ink p-6 group cursor-grow hover:bg-[#120808] active:bg-[#120808] transition-colors relative overflow-hidden ${a.comingSoon ? 'opacity-60' : ''}`}
             >
-              <div className="absolute top-0 left-0 w-full h-[2px] bg-primary origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-400" />
+              <div className="absolute top-0 left-0 w-full h-[2px] bg-primary origin-left scale-x-0 group-hover:scale-x-100 group-active:scale-x-100 transition-transform duration-400" />
               {a.comingSoon && (
                 <span className="absolute top-4 right-4 font-mono text-[10px] tracking-[0.2em] uppercase bg-primary/15 text-primary border border-primary/20 px-2 py-0.5">
                   Coming Soon
@@ -612,16 +618,15 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnter, onOpenIdentifier }) 
               Jump in and start exploring thousands of anime titles, or identify that mystery scene right away.
             </p>
             <div className="flex flex-wrap items-center gap-4 pt-1">
-              <button
+              <SlideButton
                 onClick={onEnter}
-                className="relative font-mono text-[12px] tracking-[0.2em] uppercase text-paper bg-primary border border-primary px-8 py-3.5 overflow-hidden group"
+                className="relative font-mono text-[12px] tracking-[0.2em] uppercase text-paper bg-primary border border-primary px-8 py-3.5 overflow-hidden group active:outline-none"
               >
-                <span className="absolute inset-0 bg-paper -translate-x-full group-hover:translate-x-0 transition-transform duration-300" />
-                <span className="relative z-[1] group-hover:text-ink transition-colors">Enter AnimeVerse</span>
-              </button>
+                Enter AnimeVerse
+              </SlideButton>
               <button
                 onClick={onOpenIdentifier}
-                className="font-mono text-[12px] tracking-[0.2em] uppercase text-paper/50 bg-transparent border-none px-0 py-3.5 flex items-center gap-2.5 hover:text-paper transition-colors group"
+                className="font-mono text-[12px] tracking-[0.2em] uppercase text-paper/50 bg-transparent border-none px-0 py-3.5 flex items-center gap-2.5 hover:text-paper active:text-paper transition-colors group"
               >
                 <span className="material-symbols-outlined !text-lg text-primary">auto_awesome</span>
                 Identify a Scene

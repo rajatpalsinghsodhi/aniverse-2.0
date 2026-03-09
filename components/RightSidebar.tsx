@@ -187,9 +187,9 @@ const RightSidebar: React.FC<RightSidebarProps> = ({ user, library, onWatch, var
               return (
                 <div
                   key={item.idMal ?? `${displayTitle}-${label}`}
-                  className={`p-4 bg-surface-dark border border-paper/[0.06] relative overflow-hidden group hover:bg-[#120808] transition-colors ${isInline ? 'flex-shrink-0 w-[260px]' : ''}`}
+                  className={`p-4 bg-surface-dark border border-paper/[0.06] relative overflow-hidden group hover:bg-[#120808] active:bg-[#120808] transition-colors ${isInline ? 'flex-shrink-0 w-[260px]' : ''}`}
                 >
-                  <div className="absolute top-0 left-0 w-full h-[2px] bg-primary origin-left scale-x-0 group-hover:scale-x-100 transition-transform" />
+                  <div className="absolute top-0 left-0 w-full h-[2px] bg-primary origin-left scale-x-0 group-hover:scale-x-100 group-active:scale-x-100 transition-transform" />
                   <div className="flex items-center justify-between mb-2">
                     <span className="font-mono text-[12px] tracking-[0.2em] text-primary uppercase">
                       {label}
@@ -219,14 +219,14 @@ const RightSidebar: React.FC<RightSidebarProps> = ({ user, library, onWatch, var
                 <button
                   onClick={() => setSchedulePage((p) => Math.max(1, p - 1))}
                   disabled={schedulePage === 1}
-                  className="px-2 py-1 border border-paper/10 bg-surface-dark disabled:opacity-40 disabled:cursor-not-allowed font-mono text-[12px] tracking-wider uppercase hover:bg-primary hover:text-paper hover:border-primary transition-colors"
+                  className="px-2 py-1 border border-paper/10 bg-surface-dark disabled:opacity-40 disabled:cursor-not-allowed font-mono text-[12px] tracking-wider uppercase hover:bg-primary hover:text-paper hover:border-primary active:bg-primary active:text-paper active:border-primary transition-colors"
                 >
                   Prev
                 </button>
                 <button
                   onClick={() => setSchedulePage((p) => Math.min(totalSchedulePages, p + 1))}
                   disabled={schedulePage === totalSchedulePages}
-                  className="px-2 py-1 border border-paper/10 bg-surface-dark disabled:opacity-40 disabled:cursor-not-allowed font-mono text-[12px] tracking-wider uppercase hover:bg-primary hover:text-paper hover:border-primary transition-colors"
+                  className="px-2 py-1 border border-paper/10 bg-surface-dark disabled:opacity-40 disabled:cursor-not-allowed font-mono text-[12px] tracking-wider uppercase hover:bg-primary hover:text-paper hover:border-primary active:bg-primary active:text-paper active:border-primary transition-colors"
                 >
                   Next
                 </button>
