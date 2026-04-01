@@ -25,16 +25,30 @@ function getSimilarityColor(similarity: number) {
   return { bg: 'bg-red-500/20', text: 'text-red-400', border: 'border-red-500/30' };
 }
 
+function parseImageUrl(raw: string): string | null {
+  const trimmed = raw.trim();
+  if (!trimmed) return null;
+  try {
+    const u = new URL(trimmed);
+    if (u.protocol !== 'http:' && u.protocol !== 'https:') return null;
+    return u.href;
+  } catch {
+    return null;
+  }
+}
+
 const IdentificationModal: React.FC<IdentificationModalProps> = ({ onClose, onViewAnime }) => {
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState<IdentificationResult[]>([]);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isDragOver, setIsDragOver] = useState(false);
+  const [urlInput, setUrlInput] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const modalRef = useRef<HTMLDivElement>(null);
 
   const searchWithBlob = useCallback(async (blob: Blob) => {
+    setUrlInput('');
     setImagePreview(URL.createObjectURL(blob));
     setLoading(true);
     setResults([]);
@@ -50,6 +64,28 @@ const IdentificationModal: React.FC<IdentificationModalProps> = ({ onClose, onVi
       setLoading(false);
     }
   }, []);
+
+  const searchWithImageUrl = useCallback(async () => {
+    const href = parseImageUrl(urlInput);
+    if (!href) {
+      setError('Enter a valid http(s) image URL.');
+      return;
+    }
+    setImagePreview(href);
+    setLoading(true);
+    setResults([]);
+    setError(null);
+
+    try {
+      const res = await traceMoeService.identifyAnimeByUrl(href);
+      setResults(res.slice(0, 5));
+    } catch (err: any) {
+      console.error(err);
+      setError(err.message || 'Failed to identify. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  }, [urlInput]);
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -104,6 +140,7 @@ const IdentificationModal: React.FC<IdentificationModalProps> = ({ onClose, onVi
     setResults([]);
     setImagePreview(null);
     setError(null);
+    setUrlInput('');
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
@@ -129,7 +166,7 @@ const IdentificationModal: React.FC<IdentificationModalProps> = ({ onClose, onVi
 
         <div className="p-4 sm:p-6 md:p-8 overflow-y-auto no-scrollbar space-y-6">
           <div className="text-center space-y-1">
-            <p className="text-paper/40 font-light text-sm">Upload, paste, or drop a screenshot to find the anime</p>
+            <p className="text-paper/40 font-light text-sm">Upload, paste, drop a screenshot, or paste an image URL</p>
             <p className="text-muted font-mono text-[12px] tracking-[0.2em] uppercase">Powered by trace.moe</p>
           </div>
 
@@ -171,6 +208,37 @@ const IdentificationModal: React.FC<IdentificationModalProps> = ({ onClose, onVi
                 </div>
               </>
             )}
+          </div>
+
+          <div className="space-y-2">
+            <p className="text-center text-muted font-mono text-[11px] tracking-[0.2em] uppercase">Or search by image URL</p>
+            <div className="flex flex-col sm:flex-row gap-2">
+              <input
+                type="url"
+                inputMode="url"
+                autoComplete="url"
+                placeholder="https://example.com/screenshot.jpg"
+                value={urlInput}
+                disabled={loading}
+                onChange={(e) => setUrlInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !loading) {
+                    e.preventDefault();
+                    searchWithImageUrl();
+                  }
+                }}
+                className="flex-1 min-w-0 bg-paper/[0.03] border border-paper/10 px-3 py-2.5 text-sm text-paper placeholder:text-paper/25 focus:outline-none focus:border-primary/40 focus:ring-1 focus:ring-primary/20 font-mono"
+              />
+              <button
+                type="button"
+                disabled={loading}
+                onClick={searchWithImageUrl}
+                className="shrink-0 px-4 py-2.5 bg-primary/15 border border-primary/30 text-primary font-mono text-[12px] tracking-[0.15em] uppercase hover:bg-primary/25 hover:border-primary/50 transition-colors disabled:opacity-50 disabled:pointer-events-none flex items-center justify-center gap-2"
+              >
+                <span className="material-symbols-outlined !text-lg">link</span>
+                Search URL
+              </button>
+            </div>
           </div>
 
           {loading && (
