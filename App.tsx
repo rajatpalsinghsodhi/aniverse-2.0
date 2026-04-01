@@ -95,7 +95,7 @@ const App: React.FC = () => {
         const [trendingData, topData] = await Promise.race([
           Promise.all([
             jikanService.getTrendingAnime(),
-            jikanService.getTopAnime()
+            jikanService.getTopRatedByScore()
           ]),
           timeoutPromise
         ]);
@@ -303,7 +303,7 @@ const App: React.FC = () => {
       setIsLoading(true);
       const [trendingData, topData] = await Promise.all([
         jikanService.getTrendingAnime(),
-        jikanService.getTopAnime()
+        jikanService.getTopRatedByScore()
       ]);
       setTrending(trendingData);
       setTopRated(topData);
@@ -429,11 +429,16 @@ const App: React.FC = () => {
             {/* Trending Now */}
             <section className="px-4 sm:px-6 md:px-6 lg:px-8 pb-10">
               <div className="flex flex-col lg:flex-row lg:items-center justify-between pb-6 gap-4">
-                <h2 className="font-heading text-2xl text-paper tracking-normal flex items-center gap-3">
-                  <span className="material-symbols-outlined text-primary fill-1">bolt</span>
-                  {isSeasonFilterActive ? `${selectedSeason.charAt(0).toUpperCase() + selectedSeason.slice(1)} ${selectedYear} Releases` : 'Trending Now'}
-                </h2>
-                
+                <div className="min-w-0">
+                  <h2 className="font-heading text-2xl text-paper tracking-normal flex items-center gap-3">
+                    <span className="material-symbols-outlined text-primary fill-1">bolt</span>
+                    {isSeasonFilterActive ? `${selectedSeason.charAt(0).toUpperCase() + selectedSeason.slice(1)} ${selectedYear} Releases` : 'Trending Now'}
+                  </h2>
+                  <p className="text-paper/35 font-light text-xs mt-1 max-w-lg">
+                    Order follows the catalog for this season, category, or search — not a numbered leaderboard. Top Charts shows official list positions.
+                  </p>
+                </div>
+
                 <div className="w-fit flex-shrink-0 self-start lg:self-auto flex items-center gap-1 h-10 px-2 bg-surface-dark border border-paper/[0.06]">
                   <span className="material-symbols-outlined pl-1 text-primary pointer-events-none !text-lg" aria-hidden>calendar_today</span>
                   <select 
@@ -466,11 +471,10 @@ const App: React.FC = () => {
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4 md:gap-5 lg:gap-6">
                 {trending.map((anime, index) => (
-                  <AnimeCard 
-                    key={`${anime.mal_id}-${index}`} 
-                    anime={anime} 
-                    onWatch={openWatch} 
-                    rank={index + 1}
+                  <AnimeCard
+                    key={`${anime.mal_id}-${index}`}
+                    anime={anime}
+                    onWatch={openWatch}
                   />
                 ))}
               </div>
@@ -493,13 +497,18 @@ const App: React.FC = () => {
               )}
             </section>
 
-            {/* Top Rated */}
+            {/* Highest rated (by score) */}
             <section className="px-4 sm:px-6 md:px-6 lg:px-8 pb-10">
-              <div className="flex items-center justify-between pb-6">
-                <h2 className="font-heading text-2xl text-paper tracking-normal flex items-center gap-3">
-                  <span className="material-symbols-outlined text-primary fill-1">workspace_premium</span>
-                  Top Rated
-                </h2>
+              <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-2 pb-6">
+                <div>
+                  <h2 className="font-heading text-2xl text-paper tracking-normal flex items-center gap-3">
+                    <span className="material-symbols-outlined text-primary fill-1">workspace_premium</span>
+                    Highest rated
+                  </h2>
+                  <p className="text-paper/35 font-light text-xs mt-1 max-w-md">
+                    Sorted by score (titles with a recorded rating). Not the same as the popularity top list.
+                  </p>
+                </div>
                 <button 
                   onClick={() => setActiveView('charts')}
                   className="font-mono text-[12px] tracking-[0.2em] uppercase text-muted hover:text-paper flex items-center gap-2 transition-colors"

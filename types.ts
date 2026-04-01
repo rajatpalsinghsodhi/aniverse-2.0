@@ -25,6 +25,12 @@ export interface Anime {
   duration: string;
 }
 
+/** Position on a catalog top-anime chart (Top Charts view only). Not the same as global score rank. */
+export interface AnimeListRankChart {
+  position: number;
+  filter: 'bypopularity' | 'favorite' | 'airing';
+}
+
 export interface JikanResponse<T> {
   data: T;
   pagination?: {

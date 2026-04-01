@@ -29,8 +29,11 @@ async function jikanFetch(url: string, retries = 3): Promise<any> {
 }
 
 export const jikanService = {
-  async getTopAnime(page: number = 1): Promise<Anime[]> {
-    const json: JikanResponse<Anime[]> = await jikanFetch(`${JIKAN_BASE_URL}/top/anime?filter=bypopularity&page=${page}`);
+  /** Highest scored titles (home “Highest rated” row; not the popularity top list). */
+  async getTopRatedByScore(page: number = 1): Promise<Anime[]> {
+    const json: JikanResponse<Anime[]> = await jikanFetch(
+      `${JIKAN_BASE_URL}/anime?order_by=score&sort=desc&min_score=1&page=${page}`
+    );
     return json.data || [];
   },
 

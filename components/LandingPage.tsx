@@ -62,7 +62,7 @@ const FEATURES = [
 
 const AUDIENCES = [
   { icon: 'whatshot', label: 'Casual Viewers', desc: 'Find your next binge-worthy series effortlessly.' },
-  { icon: 'military_tech', label: 'Hardcore Otaku', desc: 'Deep-dive into stats, timelines, and seasonal rankings.' },
+  { icon: 'military_tech', label: 'Hardcore Otaku', desc: 'Deep-dive into stats, timelines, and top charts.' },
   { icon: 'psychology', label: 'The Curious', desc: '"What anime is this from?" — answered in seconds.' },
   { icon: 'group', label: 'Friend Groups', desc: 'Share discoveries and build watch lists together.', comingSoon: true },
 ];

@@ -52,14 +52,16 @@ const TopCharts: React.FC<{ onWatch: (id: number) => void }> = ({ onWatch }) => 
             <Trophy className="text-primary" size={36} />
             Top Charts
           </h1>
-          <p className="text-paper/40 mt-2 font-light text-sm">The most acclaimed and popular anime of all time.</p>
+          <p className="text-paper/40 mt-2 font-light text-sm max-w-xl">
+            Curated top lists from the catalog. The number on each poster is your place on <span className="text-paper/55">this</span> list only — open a title for score and worldwide rank by rating.
+          </p>
         </div>
 
         <div className="flex flex-wrap gap-px p-0 bg-paper/[0.06] border border-paper/[0.06]">
           {[
             { id: 'bypopularity', label: 'Popular', icon: Users },
             { id: 'favorite', label: 'Favorites', icon: Star },
-            { id: 'airing', label: 'Trending', icon: TrendingUp },
+            { id: 'airing', label: 'Top airing', icon: TrendingUp },
           ].map((btn) => (
             <button
               key={btn.id}
@@ -80,7 +82,7 @@ const TopCharts: React.FC<{ onWatch: (id: number) => void }> = ({ onWatch }) => 
       {isLoading ? (
         <div className="flex flex-col items-center justify-center py-40 gap-4">
           <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
-          <p className="text-primary font-mono text-xs tracking-[0.3em] uppercase">Ranking the legends...</p>
+          <p className="text-primary font-mono text-xs tracking-[0.3em] uppercase">Loading charts...</p>
         </div>
       ) : (
         <>
@@ -93,7 +95,11 @@ const TopCharts: React.FC<{ onWatch: (id: number) => void }> = ({ onWatch }) => 
                 transition={{ delay: (index % 20) * 0.05 }}
                 className="relative group"
               >
-                <AnimeCard anime={anime} onWatch={onWatch} rank={index + 1} />
+                <AnimeCard
+                  anime={anime}
+                  onWatch={onWatch}
+                  listRankChart={{ position: index + 1, filter }}
+                />
               </motion.div>
             ))}
           </div>
@@ -110,7 +116,7 @@ const TopCharts: React.FC<{ onWatch: (id: number) => void }> = ({ onWatch }) => 
                 ) : (
                   <TrendingUp size={18} />
                 )}
-                Explore More Rankings
+                Load more on this chart
               </button>
             </div>
           )}

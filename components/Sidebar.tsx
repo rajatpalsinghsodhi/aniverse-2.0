@@ -41,13 +41,6 @@ const Sidebar: React.FC<SidebarProps> = ({ activeView, onViewChange, user, onLog
             onClick={() => onViewChange('library')}
           />
         </nav>
-
-        <div className="h-px bg-paper/[0.06] mx-2" />
-
-        <nav className="flex flex-col gap-1">
-          <p className="px-4 font-mono text-[12px] tracking-[0.3em] text-muted uppercase mb-2">Discover</p>
-          <NavItem icon="explore" label="Explore" onClick={() => onViewChange('home')} />
-        </nav>
       </div>
 
       <div className="flex flex-col gap-4 mt-8">

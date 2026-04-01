@@ -1,15 +1,18 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Anime } from '../types';
+import { Anime, AnimeListRankChart } from '../types';
+import { TOP_CHART_FILTER_LABELS } from '../constants';
 
 const LONG_PRESS_MS = 400;
 
 interface AnimeCardProps {
   anime: Anime;
   onWatch: (id: number) => void;
+  /** Only on Top Charts: position on the active top list (not the same as `anime.rank`). */
+  listRankChart?: AnimeListRankChart;
 }
 
-const AnimeCard: React.FC<AnimeCardProps & { rank?: number }> = ({ anime, onWatch, rank }) => {
+const AnimeCard: React.FC<AnimeCardProps> = ({ anime, onWatch, listRankChart }) => {
   const [showInfoOverlay, setShowInfoOverlay] = useState(false);
   const isTouchRef = useRef(false);
   const pressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -96,9 +99,23 @@ const AnimeCard: React.FC<AnimeCardProps & { rank?: number }> = ({ anime, onWatc
         {/* Top red line on hover */}
         <div className="absolute top-0 left-0 w-full h-[2px] bg-primary origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-400 z-10" />
 
-        {rank && (
-          <div className="absolute top-0 left-0 z-10 px-2.5 py-1.5 bg-primary text-paper font-mono text-[12px] tracking-widest font-bold">
-            #{rank}
+        {listRankChart && (
+          <div
+            role="img"
+            className="absolute top-0 left-0 z-[11] flex min-h-[2.25rem] min-w-[2.25rem] items-center justify-center px-2.5 py-2 bg-primary text-paper shadow-[0_2px_8px_rgba(0,0,0,0.35)]"
+            title={`Spot ${listRankChart.position} on the ${TOP_CHART_FILTER_LABELS[listRankChart.filter]} chart. Differs from worldwide score rank in details.`}
+            aria-label={`Spot ${listRankChart.position} on the ${TOP_CHART_FILTER_LABELS[listRankChart.filter]} chart`}
+          >
+            <div
+              className="pointer-events-none absolute inset-0 opacity-[0.2] bg-[repeating-linear-gradient(180deg,transparent,transparent_2px,rgba(0,0,0,0.06)_2px,rgba(0,0,0,0.06)_3px)]"
+              aria-hidden
+            />
+            <span
+              className="relative z-10 font-mono text-[15px] font-bold tabular-nums leading-none tracking-wide text-paper"
+              aria-hidden="true"
+            >
+              {listRankChart.position}
+            </span>
           </div>
         )}
 

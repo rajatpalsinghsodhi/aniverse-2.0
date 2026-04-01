@@ -181,9 +181,20 @@ const AnimeDetailsModal: React.FC<AnimeDetailsModalProps> = ({ animeId, onClose,
                       <span className="font-mono text-[12px] tracking-[0.3em] text-muted uppercase">Global Score</span>
                     </div>
                     <div className="w-px h-10 bg-paper/10" />
-                    <div className="flex flex-col items-center">
-                      <span className="text-xl md:text-2xl font-black text-paper font-heading mb-1">#{anime.rank}</span>
-                      <span className="font-mono text-[12px] tracking-[0.3em] text-muted uppercase">Ranking</span>
+                    <div
+                      className="flex flex-col items-center max-w-[7.5rem]"
+                      title={
+                        anime.rank != null && anime.rank > 0
+                          ? 'Worldwide rank by weighted score in the catalog. Separate from member-popularity ordering; Top Chart badges mark spots on other curated lists.'
+                          : undefined
+                      }
+                    >
+                      <span className="text-xl md:text-2xl font-black text-paper font-heading mb-1">
+                        {anime.rank != null && anime.rank > 0 ? `#${anime.rank}` : '—'}
+                      </span>
+                      <span className="font-mono text-[10px] md:text-[12px] tracking-[0.2em] text-muted uppercase text-center leading-tight">
+                        Worldwide rank
+                      </span>
                     </div>
                   </div>
 

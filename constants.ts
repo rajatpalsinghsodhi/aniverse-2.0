@@ -1,6 +1,13 @@
 
 export const JIKAN_BASE_URL = 'https://api.jikan.moe/v4';
 
+/** Short labels for top-anime chart filters — used on chart position badges. */
+export const TOP_CHART_FILTER_LABELS: Record<'bypopularity' | 'favorite' | 'airing', string> = {
+  bypopularity: 'Popular',
+  favorite: 'Favorites',
+  airing: 'Airing',
+};
+
 export const CATEGORIES = [
   { id: 0, name: 'All Categories' },
   { id: 1, name: 'Action' },
