@@ -1,6 +1,6 @@
 
 import { JIKAN_BASE_URL } from '../constants';
-import { Anime, JikanResponse, AnimeEpisode } from '../types';
+import { Anime, JikanResponse, AnimeEpisode, AnimeRecommendationItem } from '../types';
 
 const RATE_LIMIT_DELAY = 350;
 let lastRequestTime = 0;
@@ -97,6 +97,14 @@ export const jikanService = {
 
   async getAnimeRelations(id: number): Promise<any[]> {
     const json: JikanResponse<any[]> = await jikanFetch(`${JIKAN_BASE_URL}/anime/${id}/relations`);
+    return json.data || [];
+  },
+
+  /** MyAnimeList community recommendations for this title (Jikan wraps MAL). */
+  async getAnimeRecommendations(id: number): Promise<AnimeRecommendationItem[]> {
+    const json: JikanResponse<AnimeRecommendationItem[]> = await jikanFetch(
+      `${JIKAN_BASE_URL}/anime/${id}/recommendations`
+    );
     return json.data || [];
   },
 

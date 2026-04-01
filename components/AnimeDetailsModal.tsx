@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, ExternalLink, Plus, Check, Star, Clock, Play, Info, Users, Image as ImageIcon, Layers, Share2 } from 'lucide-react';
+import { X, ExternalLink, Plus, Check, Star, Clock, Play, Info, Users, Image as ImageIcon, Layers, Share2, Sparkles } from 'lucide-react';
 import { jikanService } from '../services/jikanService';
-import { Anime } from '../types';
+import { Anime, AnimeRecommendationItem } from '../types';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
@@ -24,9 +24,10 @@ const AnimeDetailsModal: React.FC<AnimeDetailsModalProps> = ({ animeId, onClose,
   const [characters, setCharacters] = useState<any[]>([]);
   const [pictures, setPictures] = useState<any[]>([]);
   const [relations, setRelations] = useState<any[]>([]);
+  const [recommendations, setRecommendations] = useState<AnimeRecommendationItem[]>([]);
   const [fallbackSynopsis, setFallbackSynopsis] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'info' | 'characters' | 'relations' | 'gallery' | 'watch'>('info');
+  const [activeTab, setActiveTab] = useState<'info' | 'characters' | 'relations' | 'gallery' | 'similar' | 'watch'>('info');
   const [nextEpisodeLabel, setNextEpisodeLabel] = useState<string | null>(null);
 
   useEffect(() => {
@@ -42,12 +43,14 @@ const AnimeDetailsModal: React.FC<AnimeDetailsModalProps> = ({ animeId, onClose,
     const fetchDetails = async () => {
       try {
         setIsLoading(true);
-        const [fullDetails, chars, pics] = await Promise.all([
+        const [fullDetails, chars, pics, recs] = await Promise.all([
           jikanService.getAnimeDetailsFull(currentAnimeId),
           jikanService.getAnimeCharacters(currentAnimeId),
           jikanService.getAnimePictures(currentAnimeId),
+          jikanService.getAnimeRecommendations(currentAnimeId).catch(() => [] as AnimeRecommendationItem[]),
         ]);
         setAnime(fullDetails);
+        setRecommendations(recs);
 
         const stream = fullDetails.streaming || [];
         const external = fullDetails.external || [];
@@ -236,6 +239,7 @@ const AnimeDetailsModal: React.FC<AnimeDetailsModalProps> = ({ animeId, onClose,
                 { id: 'characters', label: 'CAST', icon: Users },
                 { id: 'relations', label: 'TIMELINE', icon: Layers },
                 { id: 'gallery', label: 'GALLERY', icon: ImageIcon },
+                { id: 'similar', label: 'SIMILAR', icon: Sparkles },
                 { id: 'watch', label: 'STREAM', icon: Play },
               ].map((tab) => (
                 <button
@@ -470,6 +474,74 @@ const AnimeDetailsModal: React.FC<AnimeDetailsModalProps> = ({ animeId, onClose,
                         />
                       </div>
                     ))}
+                  </motion.div>
+                )}
+
+                {activeTab === 'similar' && (
+                  <motion.div
+                    key="similar"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="space-y-8"
+                  >
+                    <div className="p-8 md:p-10 bg-gradient-to-br from-accent-purple/15 to-transparent border border-accent-purple/25 relative overflow-hidden">
+                      <div className="absolute top-0 right-0 p-8 opacity-[0.07]">
+                        <Sparkles size={120} strokeWidth={1} className="text-accent-purple" />
+                      </div>
+                      <div className="relative z-10 space-y-2">
+                        <h3 className="font-heading text-2xl text-paper flex items-center gap-3">
+                          <Sparkles size={24} className="text-primary shrink-0" />
+                          You might also like
+                        </h3>
+                        <p className="text-paper/45 text-sm font-light max-w-xl leading-relaxed">
+                          Titles frequently recommended together on MyAnimeList—discovered via the Jikan API.
+                        </p>
+                      </div>
+                    </div>
+
+                    {recommendations.length > 0 ? (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        {recommendations.map((rec) => (
+                          <button
+                            key={rec.entry.mal_id}
+                            type="button"
+                            onClick={() => setCurrentAnimeId(rec.entry.mal_id)}
+                            className="text-left flex gap-4 p-4 md:p-5 bg-paper/[0.03] border border-paper/[0.06] hover:bg-primary/10 hover:border-primary/35 transition-all group cursor-grow"
+                          >
+                            <div className="w-[88px] sm:w-24 aspect-[2/3] shrink-0 overflow-hidden border border-paper/10 shadow-lg">
+                              <img
+                                src={rec.entry.images.jpg.large_image_url}
+                                alt=""
+                                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                              />
+                            </div>
+                            <div className="flex-1 min-w-0 flex flex-col justify-between py-0.5">
+                              <div>
+                                <p className="text-paper font-bold text-base md:text-lg tracking-tight group-hover:text-primary transition-colors line-clamp-2">
+                                  {rec.entry.title}
+                                </p>
+                                <p className="text-muted font-mono text-[11px] md:text-[12px] tracking-[0.2em] uppercase mt-2">
+                                  MAL recommendation
+                                </p>
+                              </div>
+                              <div className="flex items-center gap-2 mt-3">
+                                <span className="px-2.5 py-1 bg-paper/[0.06] border border-paper/10 font-mono text-[11px] md:text-[12px] text-paper/70">
+                                  {rec.votes.toLocaleString()} {rec.votes === 1 ? 'vote' : 'votes'}
+                                </span>
+                              </div>
+                            </div>
+                            <ExternalLink size={16} className="text-muted group-hover:text-primary shrink-0 mt-1 opacity-60 group-hover:opacity-100" />
+                          </button>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-20 px-4 border border-dashed border-paper/10 bg-paper/[0.02] space-y-3">
+                        <p className="text-paper/70 font-medium">No recommendations yet</p>
+                        <p className="text-muted font-mono text-[12px] tracking-wider max-w-md mx-auto">
+                          MyAnimeList has no community recommendations linked to this title, or the list could not be loaded.
+                        </p>
+                      </div>
+                    )}
                   </motion.div>
                 )}
 

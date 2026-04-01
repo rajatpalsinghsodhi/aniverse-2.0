@@ -48,6 +48,17 @@ export interface AnimeEpisode {
   recap: boolean;
 }
 
+/** Row from Jikan `GET /anime/{id}/recommendations` (MyAnimeList user recs). */
+export interface AnimeRecommendationItem {
+  entry: {
+    mal_id: number;
+    url: string;
+    title: string;
+    images: Anime['images'];
+  };
+  votes: number;
+}
+
 export interface IdentificationResult {
   anilist: {
     id: number;
