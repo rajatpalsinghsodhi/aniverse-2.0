@@ -3,12 +3,7 @@ import cors from "cors";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 import { randomUUID } from "node:crypto";
-import {
-  assertAuthStorageConfigured,
-  loadState,
-  saveState,
-  type AuthUser,
-} from "./state";
+import { loadState, saveState, type AuthUser } from "./state";
 
 function jwtSecret(): string {
   const s = process.env.JWT_SECRET;
@@ -80,7 +75,6 @@ export function createAuthApp() {
 
   app.post("/api/auth/signup", async (req, res, next) => {
     try {
-      assertAuthStorageConfigured();
       const { email, password, username } = req.body ?? {};
       const state = await loadState();
       if (state.users.find((u) => u.email === email)) {
@@ -113,7 +107,6 @@ export function createAuthApp() {
 
   app.post("/api/auth/login", async (req, res, next) => {
     try {
-      assertAuthStorageConfigured();
       const { email, password } = req.body ?? {};
       const state = await loadState();
       const user = state.users.find((u) => u.email === email);
@@ -146,7 +139,6 @@ export function createAuthApp() {
 
   app.get("/api/library", authenticate, async (req, res, next) => {
     try {
-      assertAuthStorageConfigured();
       const uid = (req as express.Request & { user: AuthedUser }).user.id;
       const state = await loadState();
       res.json(state.libraries[uid] || []);
@@ -157,7 +149,6 @@ export function createAuthApp() {
 
   app.post("/api/library/add", authenticate, async (req, res, next) => {
     try {
-      assertAuthStorageConfigured();
       const uid = (req as express.Request & { user: AuthedUser }).user.id;
       const { anime } = req.body ?? {};
       const state = await loadState();
@@ -175,7 +166,6 @@ export function createAuthApp() {
 
   app.post("/api/library/update", authenticate, async (req, res, next) => {
     try {
-      assertAuthStorageConfigured();
       const uid = (req as express.Request & { user: AuthedUser }).user.id;
       const { animeId, status } = req.body ?? {};
       const state = await loadState();
@@ -191,7 +181,6 @@ export function createAuthApp() {
 
   app.post("/api/library/remove", authenticate, async (req, res, next) => {
     try {
-      assertAuthStorageConfigured();
       const uid = (req as express.Request & { user: AuthedUser }).user.id;
       const { animeId } = req.body ?? {};
       const state = await loadState();

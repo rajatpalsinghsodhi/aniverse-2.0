@@ -26,18 +26,15 @@ function useRedis(): boolean {
   );
 }
 
-/** On Vercel, auth data must be stored outside the function (Redis). */
-export function assertAuthStorageConfigured(): void {
-  if (process.env.VERCEL && !useRedis()) {
-    const err = new Error(
-      "Auth storage not configured. Add UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN in Vercel → Settings → Environment Variables (create a free database at upstash.com)."
-    );
-    (err as Error & { statusCode?: number }).statusCode = 503;
-    throw err;
-  }
-}
+let warnedEphemeral = false;
 
 export async function loadState(): Promise<AppState> {
+  if (process.env.VERCEL && !useRedis() && !warnedEphemeral) {
+    warnedEphemeral = true;
+    console.warn(
+      "[auth] No UPSTASH_REDIS_* env: using in-memory user store (resets when the serverless instance cold-starts). Add Upstash Redis for durable accounts without a SQL database."
+    );
+  }
   if (useRedis()) {
     const redis = Redis.fromEnv();
     const raw = await redis.get<string>(STATE_KEY);
