@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { X, Mail, Lock, User, ArrowRight } from 'lucide-react';
+import { setStoredToken } from '../utils/authToken';
 
 interface LoginModalProps {
   onClose: () => void;
@@ -30,13 +31,31 @@ const LoginModal: React.FC<LoginModalProps> = ({ onClose, onLogin }) => {
         body: JSON.stringify(body),
       });
 
-      const data = await res.json();
+      const raw = await res.text();
+      let data: { message?: string; user?: unknown; token?: string };
+      try {
+        data = raw ? JSON.parse(raw) : {};
+      } catch {
+        throw new Error(!res.ok ? `Request failed (${res.status})` : 'Invalid response from server');
+      }
       if (!res.ok) throw new Error(data.message || 'Something went wrong');
+      if (!data.user) throw new Error('Invalid response from server');
+      if (typeof data.token !== 'string' || !data.token) {
+        throw new Error('Invalid response from server');
+      }
+      setStoredToken(data.token);
 
       onLogin(data.user);
       onClose();
     } catch (err: any) {
-      setError(err.message);
+      const msg = String(err?.message ?? err);
+      if (msg.includes('Unexpected token') || msg.includes('is not valid JSON')) {
+        setError(
+          'Could not reach the login API (got HTML instead of JSON). Run: npm run dev (Vite + Express on port 3001).'
+        );
+      } else {
+        setError(msg);
+      }
     } finally {
       setIsLoading(false);
     }

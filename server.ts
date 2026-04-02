@@ -1,7 +1,6 @@
 import express from "express";
 import { createServer as createViteServer } from "vite";
 import cors from "cors";
-import cookieParser from "cookie-parser";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 
@@ -13,13 +12,18 @@ const JWT_SECRET = "anime-discovery-secret-123";
 const users: any[] = [];
 const libraries: Record<string, any[]> = {}; // userId -> animeList
 
-app.use(cors());
+function getBearerToken(req: express.Request): string | null {
+  const h = req.headers.authorization;
+  if (!h || !h.startsWith("Bearer ")) return null;
+  return h.slice(7).trim() || null;
+}
+
+app.use(cors({ allowedHeaders: ["Content-Type", "Authorization"] }));
 app.use(express.json());
-app.use(cookieParser());
 
 // Auth Middleware
 const authenticate = (req: any, res: any, next: any) => {
-  const token = req.cookies.token;
+  const token = getBearerToken(req);
   if (!token) return res.status(401).json({ message: "Unauthorized" });
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
@@ -44,8 +48,10 @@ app.post("/api/auth/signup", async (req, res) => {
   libraries[user.id] = [];
   
   const token = jwt.sign({ id: user.id, email: user.email, username: user.username }, JWT_SECRET);
-  res.cookie("token", token, { httpOnly: true, secure: true, sameSite: "none" });
-  res.json({ user: { id: user.id, email: user.email, username: user.username } });
+  res.json({
+    user: { id: user.id, email: user.email, username: user.username },
+    token,
+  });
 });
 
 app.post("/api/auth/login", async (req, res) => {
@@ -55,12 +61,13 @@ app.post("/api/auth/login", async (req, res) => {
     return res.status(400).json({ message: "Invalid credentials" });
   }
   const token = jwt.sign({ id: user.id, email: user.email, username: user.username }, JWT_SECRET);
-  res.cookie("token", token, { httpOnly: true, secure: true, sameSite: "none" });
-  res.json({ user: { id: user.id, email: user.email, username: user.username } });
+  res.json({
+    user: { id: user.id, email: user.email, username: user.username },
+    token,
+  });
 });
 
-app.post("/api/auth/logout", (req, res) => {
-  res.clearCookie("token");
+app.post("/api/auth/logout", (_req, res) => {
   res.json({ message: "Logged out" });
 });
 

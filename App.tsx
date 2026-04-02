@@ -16,6 +16,8 @@ import { useNotifications } from './hooks/useNotifications';
 import { jikanService } from './services/jikanService';
 import { Anime } from './types';
 import { CATEGORIES } from './constants';
+import { parseJsonResponse } from './utils/parseJsonResponse';
+import { authHeaders, getStoredToken, setStoredToken } from './utils/authToken';
 
 const App: React.FC = () => {
   const [trending, setTrending] = useState<Anime[]>([]);
@@ -110,11 +112,18 @@ const App: React.FC = () => {
       }
 
       try {
-        const authRes = await fetch('/api/auth/me');
+        if (!getStoredToken()) return;
+        const authRes = await fetch('/api/auth/me', { headers: authHeaders() });
+        if (authRes.status === 401) {
+          setStoredToken(null);
+          return;
+        }
         if (authRes.ok) {
-          const authData = await authRes.json();
-          setUser(authData.user);
-          fetchLibrary();
+          const authData = await parseJsonResponse<{ user: unknown }>(authRes);
+          if (authData?.user) {
+            setUser(authData.user);
+            fetchLibrary();
+          }
         }
       } catch (authErr) {
         console.error("Auth check failed", authErr);
@@ -125,10 +134,10 @@ const App: React.FC = () => {
 
   const fetchLibrary = async () => {
     try {
-      const res = await fetch('/api/library');
+      const res = await fetch('/api/library', { headers: authHeaders() });
       if (res.ok) {
-        const data = await res.json();
-        setLibrary(data);
+        const data = await parseJsonResponse<unknown[]>(res);
+        if (data) setLibrary(data);
       }
     } catch (err) {
       console.error(err);
@@ -244,12 +253,12 @@ const App: React.FC = () => {
     try {
       const res = await fetch('/api/library/add', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...authHeaders() },
         body: JSON.stringify({ anime }),
       });
       if (res.ok) {
-        const data = await res.json();
-        setLibrary(data);
+        const data = await parseJsonResponse<unknown[]>(res);
+        if (data) setLibrary(data);
       }
     } catch (err) {
       console.error(err);
@@ -260,12 +269,12 @@ const App: React.FC = () => {
     try {
       const res = await fetch('/api/library/remove', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...authHeaders() },
         body: JSON.stringify({ animeId }),
       });
       if (res.ok) {
-        const data = await res.json();
-        setLibrary(data);
+        const data = await parseJsonResponse<unknown[]>(res);
+        if (data) setLibrary(data);
       }
     } catch (err) {
       console.error(err);
@@ -276,12 +285,12 @@ const App: React.FC = () => {
     try {
       const res = await fetch('/api/library/update', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...authHeaders() },
         body: JSON.stringify({ animeId, status }),
       });
       if (res.ok) {
-        const data = await res.json();
-        setLibrary(data);
+        const data = await parseJsonResponse<unknown[]>(res);
+        if (data) setLibrary(data);
       }
     } catch (err) {
       console.error(err);
@@ -289,7 +298,8 @@ const App: React.FC = () => {
   };
 
   const handleLogout = async () => {
-    await fetch('/api/auth/logout', { method: 'POST' });
+    await fetch('/api/auth/logout', { method: 'POST', headers: authHeaders() });
+    setStoredToken(null);
     setUser(null);
     setLibrary([]);
     setActiveView('home');

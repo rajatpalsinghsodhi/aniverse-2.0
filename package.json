@@ -7,15 +7,15 @@
     "dev": "concurrently -n api,vite -c blue,green \"tsx server-api.ts\" \"vite\"",
     "dev:legacy": "tsx server.ts",
     "build": "vite build",
-"preview": "vite preview",
-"lint": "tsc --noEmit",
-"screenshot:figma": "node scripts/screenshot-for-figma.mjs"
+    "preview": "vite preview",
+    "lint": "tsc --noEmit",
+    "screenshot:figma": "node scripts/screenshot-for-figma.mjs"
   },
   "dependencies": {
     "@google/genai": "^1.38.0",
+    "@upstash/redis": "^1.37.0",
     "bcryptjs": "^3.0.3",
     "clsx": "^2.1.1",
-    "cookie-parser": "^1.4.7",
     "cors": "^2.8.6",
     "express": "^5.2.1",
     "framer-motion": "^12.34.3",
@@ -27,17 +27,16 @@
     "tailwind-merge": "^3.5.0"
   },
   "devDependencies": {
-    "concurrently": "^9.1.0",
     "@types/bcryptjs": "^2.4.6",
-    "@types/cookie-parser": "^1.4.10",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^22.14.0",
     "@vitejs/plugin-react": "^5.0.0",
+    "concurrently": "^9.1.0",
+    "puppeteer": "^24.0.0",
     "tsx": "^4.21.0",
-"typescript": "~5.8.2",
-"vite": "^6.2.0",
-"puppeteer": "^24.0.0"
-}
+    "typescript": "~5.8.2",
+    "vite": "^6.2.0"
+  }
 }
