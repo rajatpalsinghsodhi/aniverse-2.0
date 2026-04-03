@@ -4,8 +4,8 @@ let initError: string | null = null;
 export default async function handler(req: any, res: any) {
   if (!app && !initError) {
     try {
-      const mod = await import("./lib/expressApp");
-      app = (mod.createAuthApp || mod.default?.createAuthApp || mod.default)();
+      const { createAuthApp } = await import("../lib/auth/expressApp.js");
+      app = createAuthApp();
     } catch (e: any) {
       initError = e.stack || e.message || String(e);
       console.error("INIT ERROR:", initError);
