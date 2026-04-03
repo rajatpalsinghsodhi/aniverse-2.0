@@ -3,7 +3,7 @@ import cors from "cors";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 import { randomUUID } from "node:crypto";
-import { loadState, saveState, type AuthUser } from "./state.js";
+import { loadState, saveState, type AuthUser } from "./state";
 
 function jwtSecret(): string {
   const s = process.env.JWT_SECRET;
