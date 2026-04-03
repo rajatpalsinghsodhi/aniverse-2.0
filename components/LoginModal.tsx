@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { X, Mail, Lock, User, ArrowRight } from 'lucide-react';
 import { setStoredToken } from '../utils/authToken';
-import { parseApiJsonBody } from '../utils/parseApiJson';
+import { htmlInsteadOfJsonMessage, parseApiJsonBody } from '../utils/parseApiJson';
 
 interface LoginModalProps {
   onClose: () => void;
@@ -55,8 +55,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ onClose, onLogin }) => {
     } catch (err: any) {
       let m = String(err?.message ?? err);
       if (/unexpected token|not valid json/i.test(m)) {
-        m =
-          "The server returned a web page instead of JSON. If this is production, redeploy after the latest fix. Locally run: npm run dev.";
+        m = htmlInsteadOfJsonMessage();
       }
       setError(m);
     } finally {

@@ -7,6 +7,7 @@ export default defineConfig(({ mode }) => {
     return {
       server: {
         port: 3000,
+        strictPort: true,
         host: '::', // listen on all interfaces (IPv4 + IPv6) so localhost and 192.168.x.x both work
         hmr: true,
         proxy: {

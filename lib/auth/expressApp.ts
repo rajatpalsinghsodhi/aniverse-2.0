@@ -33,58 +33,12 @@ export function createAuthApp() {
   ];
   app.use(
     cors({
-      origin: process.env.VERCEL
-        ? (origin, cb) => {
-            if (!origin) return cb(null, true);
-            if (origin.endsWith(".vercel.app")) return cb(null, true);
-            const authOrigin = process.env.AUTH_ORIGIN;
-            if (authOrigin && origin === authOrigin) return cb(null, true);
-            const vercelUrl = process.env.VERCEL_URL
-              ? `https://${process.env.VERCEL_URL}`
-              : "";
-            if (vercelUrl && origin === vercelUrl) return cb(null, true);
-            const branchUrl = process.env.VERCEL_BRANCH_URL
-              ? `https://${process.env.VERCEL_BRANCH_URL}`
-              : "";
-            if (branchUrl && origin === branchUrl) return cb(null, true);
-            return cb(null, false);
-          }
-        : devOrigins,
+      // On Vercel, reflect the request origin so custom domains work without AUTH_ORIGIN.
+      origin: process.env.VERCEL ? true : devOrigins,
       credentials: true,
       allowedHeaders: ["Content-Type", "Authorization"],
     })
   );
-
-  // vercel.json routes /api/* → /api?path=* so api/index.ts receives all API traffic.
-  app.use((req, _res, next) => {
-    if (!process.env.VERCEL) {
-      next();
-      return;
-    }
-    try {
-      const u = new URL(req.url || "/", "http://internal");
-      let pathParam = u.searchParams.get("path");
-      if (!pathParam) {
-        for (const key of u.searchParams.keys()) {
-          if (key === "path" || key.startsWith("path")) {
-            pathParam = u.searchParams.get(key);
-            if (pathParam) break;
-          }
-        }
-      }
-      if (pathParam) {
-        u.searchParams.delete("path");
-        for (const key of [...u.searchParams.keys()]) {
-          if (key.startsWith("path")) u.searchParams.delete(key);
-        }
-        const rest = u.searchParams.toString();
-        req.url = "/api/" + pathParam + (rest ? `?${rest}` : "");
-      }
-    } catch {
-      /* ignore malformed URL */
-    }
-    next();
-  });
 
   app.use(express.json());
 

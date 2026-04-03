@@ -10,7 +10,9 @@ export async function parseJsonResponse<T>(res: Response): Promise<T | null> {
   } catch {
     console.warn(
       `[api] Expected JSON, got non-JSON (${res.status}). ` +
-        `Run both servers: npm run dev (Vite + Express on :3001).`
+        (import.meta.env.DEV
+          ? "Run npm run dev and open http://localhost:3000 (Vite proxies /api to Express on :3001)."
+          : "On Vercel: check /api routes, JWT_SECRET, and redeploy.")
     );
     return null;
   }
