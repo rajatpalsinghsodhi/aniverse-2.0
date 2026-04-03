@@ -1,3 +1,3 @@
-import { createAuthApp } from "../lib/auth/expressApp";
+import { createAuthApp } from "./lib/expressApp";
 const app = createAuthApp();
 export default app;
