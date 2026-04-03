@@ -55,7 +55,7 @@ export function createAuthApp() {
     })
   );
 
-  // vercel.json maps /api/* → /api?path=* so api/index.ts receives all API traffic.
+  // vercel.json routes /api/* → /api?path=* so api/index.ts receives all API traffic.
   app.use((req, _res, next) => {
     if (!process.env.VERCEL) {
       next();
@@ -63,9 +63,20 @@ export function createAuthApp() {
     }
     try {
       const u = new URL(req.url || "/", "http://internal");
-      const pathParam = u.searchParams.get("path");
+      let pathParam = u.searchParams.get("path");
+      if (!pathParam) {
+        for (const key of u.searchParams.keys()) {
+          if (key === "path" || key.startsWith("path")) {
+            pathParam = u.searchParams.get(key);
+            if (pathParam) break;
+          }
+        }
+      }
       if (pathParam) {
         u.searchParams.delete("path");
+        for (const key of [...u.searchParams.keys()]) {
+          if (key.startsWith("path")) u.searchParams.delete(key);
+        }
         const rest = u.searchParams.toString();
         req.url = "/api/" + pathParam + (rest ? `?${rest}` : "");
       }
