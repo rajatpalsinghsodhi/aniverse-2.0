@@ -1,16 +1,21 @@
-import { createAuthApp } from "./lib/expressApp";
+let app: any = null;
+let initError: string | null = null;
 
-let app: ReturnType<typeof createAuthApp> | null = null;
-
-function getApp() {
-  if (!app) app = createAuthApp();
-  return app;
-}
-
-export default function handler(req: any, res: any) {
-  try {
-    getApp()(req, res);
-  } catch (e: any) {
-    res.status(500).json({ error: e.message, stack: e.stack?.split("\n").slice(0, 5) });
+export default async function handler(req: any, res: any) {
+  if (!app && !initError) {
+    try {
+      const mod = await import("./lib/expressApp");
+      app = (mod.createAuthApp || mod.default?.createAuthApp || mod.default)();
+    } catch (e: any) {
+      initError = e.stack || e.message || String(e);
+      console.error("INIT ERROR:", initError);
+    }
   }
+  if (initError) {
+    res.setHeader("Content-Type", "application/json");
+    res.statusCode = 500;
+    res.end(JSON.stringify({ initError }));
+    return;
+  }
+  app(req, res);
 }
