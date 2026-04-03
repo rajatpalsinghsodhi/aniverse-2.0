@@ -53,7 +53,12 @@ const LoginModal: React.FC<LoginModalProps> = ({ onClose, onLogin }) => {
       onLogin(data.user);
       onClose();
     } catch (err: any) {
-      setError(String(err?.message ?? err));
+      let m = String(err?.message ?? err);
+      if (/unexpected token|not valid json/i.test(m)) {
+        m =
+          "The server returned a web page instead of JSON. If this is production, redeploy after the latest fix. Locally run: npm run dev.";
+      }
+      setError(m);
     } finally {
       setIsLoading(false);
     }

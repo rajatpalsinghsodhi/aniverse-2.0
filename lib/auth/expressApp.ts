@@ -54,7 +54,43 @@ export function createAuthApp() {
       allowedHeaders: ["Content-Type", "Authorization"],
     })
   );
+
+  // vercel.json maps /api/* → /api?path=* so api/index.ts receives all API traffic.
+  app.use((req, _res, next) => {
+    if (!process.env.VERCEL) {
+      next();
+      return;
+    }
+    try {
+      const u = new URL(req.url || "/", "http://internal");
+      const pathParam = u.searchParams.get("path");
+      if (pathParam) {
+        u.searchParams.delete("path");
+        const rest = u.searchParams.toString();
+        req.url = "/api/" + pathParam + (rest ? `?${rest}` : "");
+      }
+    } catch {
+      /* ignore malformed URL */
+    }
+    next();
+  });
+
   app.use(express.json());
+
+  // Vercel may strip the /api prefix when invoking the handler — restore so routes match.
+  app.use((req, _res, next) => {
+    const full = req.url ?? "";
+    const q = full.includes("?") ? full.slice(full.indexOf("?")) : "";
+    const pathOnly = full.split("?")[0] ?? "";
+    if (pathOnly.startsWith("/api/") || pathOnly === "/api") {
+      next();
+      return;
+    }
+    if (pathOnly.startsWith("/auth/") || pathOnly.startsWith("/library")) {
+      req.url = "/api" + pathOnly + q;
+    }
+    next();
+  });
 
   type AuthedUser = { id: string; email: string; username: string };
 
@@ -192,6 +228,10 @@ export function createAuthApp() {
     } catch (e) {
       next(e);
     }
+  });
+
+  app.use((req, res) => {
+    res.status(404).json({ message: "Not found", path: req.url });
   });
 
   app.use(

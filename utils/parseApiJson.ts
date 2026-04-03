@@ -7,7 +7,7 @@ export function parseApiJsonBody(
 ):
   | { ok: true; data: unknown }
   | { ok: false; message: string } {
-  const trimmed = raw.trim();
+  const trimmed = raw.replace(/^\uFEFF/, "").trim();
   if (!trimmed) {
     return {
       ok: false,
