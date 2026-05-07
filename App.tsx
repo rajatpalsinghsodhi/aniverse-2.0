@@ -132,6 +132,17 @@ const App: React.FC = () => {
     fetchData();
   }, []);
 
+  // Deep-link: ?anime=MAL_ID opens the detail modal directly, then strips the param.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const animeParam = params.get('anime');
+    if (!animeParam) return;
+    const malId = parseInt(animeParam, 10);
+    if (!Number.isNaN(malId)) setWatchingAnimeId(malId);
+    const clean = window.location.pathname + window.location.hash;
+    window.history.replaceState(null, '', clean);
+  }, []);
+
   const fetchLibrary = async () => {
     try {
       const res = await fetch('/api/library', { headers: authHeaders() });
