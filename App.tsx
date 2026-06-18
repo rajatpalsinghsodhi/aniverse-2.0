@@ -86,7 +86,7 @@ const App: React.FC = () => {
   }, [isCategoryCarouselPaused]);
 
   useEffect(() => {
-    const TIMEOUT_MS = 12000;
+    const TIMEOUT_MS = 25000;
 
     const fetchData = async () => {
       const timeoutPromise = new Promise<never>((_, reject) =>
@@ -94,13 +94,24 @@ const App: React.FC = () => {
       );
 
       try {
-        const [trendingData, topData] = await Promise.race([
-          Promise.all([
+        const [trendingResult, topResult] = await Promise.race([
+          Promise.allSettled([
             jikanService.getTrendingAnime(),
             jikanService.getTopRatedByScore()
           ]),
           timeoutPromise
-        ]);
+        ]) as [PromiseSettledResult<Anime[]>, PromiseSettledResult<Anime[]>];
+
+        const trendingData = trendingResult.status === 'fulfilled' ? trendingResult.value : [];
+        const topData = topResult.status === 'fulfilled' ? topResult.value : [];
+
+        if (trendingResult.status === 'rejected') {
+          console.error("Error fetching trending anime", trendingResult.reason);
+        }
+        if (topResult.status === 'rejected') {
+          console.error("Error fetching top rated anime", topResult.reason);
+        }
+
         setTrending(trendingData || []);
         setTopRated(topData || []);
       } catch (err) {
@@ -322,12 +333,12 @@ const App: React.FC = () => {
     setIsSeasonFilterActive(false);
     try {
       setIsLoading(true);
-      const [trendingData, topData] = await Promise.all([
+      const [trendingResult, topResult] = await Promise.allSettled([
         jikanService.getTrendingAnime(),
         jikanService.getTopRatedByScore()
       ]);
-      setTrending(trendingData);
-      setTopRated(topData);
+      setTrending(trendingResult.status === 'fulfilled' ? trendingResult.value : []);
+      setTopRated(topResult.status === 'fulfilled' ? topResult.value : []);
       setActiveView('home');
     } catch (err) {
       console.error("Error resetting home", err);
