@@ -5,7 +5,17 @@ import { Anime, JikanResponse, AnimeEpisode, AnimeRecommendationItem } from '../
 const RATE_LIMIT_DELAY = 350;
 let lastRequestTime = 0;
 
-async function jikanFetch(url: string, retries = 3): Promise<any> {
+const inflightRequests = new Map<string, Promise<unknown>>();
+
+function dedupeRequest<T>(key: string, fn: () => Promise<T>): Promise<T> {
+  const existing = inflightRequests.get(key);
+  if (existing) return existing as Promise<T>;
+  const promise = fn().finally(() => inflightRequests.delete(key));
+  inflightRequests.set(key, promise);
+  return promise;
+}
+
+async function jikanFetch(url: string, retries = 3, timeoutMs?: number): Promise<any> {
   const now = Date.now();
   const timeSinceLast = now - lastRequestTime;
   if (timeSinceLast < RATE_LIMIT_DELAY) {
@@ -13,7 +23,22 @@ async function jikanFetch(url: string, retries = 3): Promise<any> {
   }
   lastRequestTime = Date.now();
 
-  const res = await fetch(url);
+  const controller = timeoutMs ? new AbortController() : undefined;
+  const timer = timeoutMs
+    ? setTimeout(() => controller!.abort(), timeoutMs)
+    : undefined;
+
+  let res: Response;
+  try {
+    res = await fetch(url, controller ? { signal: controller.signal } : undefined);
+  } catch (err) {
+    if (timer) clearTimeout(timer);
+    if (err instanceof Error && err.name === 'AbortError') {
+      throw new Error(`Jikan API timeout: ${url}`);
+    }
+    throw err;
+  }
+  if (timer) clearTimeout(timer);
 
   if ((res.status === 429 || res.status >= 500) && retries > 0) {
     const retryAfter =
@@ -21,7 +46,7 @@ async function jikanFetch(url: string, retries = 3): Promise<any> {
         ? parseInt(res.headers.get('Retry-After') || '2', 10)
         : 2 * (4 - retries);
     await new Promise(r => setTimeout(r, retryAfter * 1000));
-    return jikanFetch(url, retries - 1);
+    return jikanFetch(url, retries - 1, timeoutMs);
   }
 
   if (!res.ok) {
@@ -34,24 +59,30 @@ async function jikanFetch(url: string, retries = 3): Promise<any> {
 export const jikanService = {
   /** Highest scored titles (home “Highest rated” row; not the popularity top list). */
   async getTopRatedByScore(page: number = 1): Promise<Anime[]> {
-    try {
-      const json: JikanResponse<Anime[]> = await jikanFetch(
-        `${JIKAN_BASE_URL}/anime?order_by=score&sort=desc&min_score=1&page=${page}`,
-        0
-      );
-      return json.data || [];
-    } catch {
-      // MAL score-sorted queries often 504 when MyAnimeList is slow; popularity list is more reliable.
-      const fallback: JikanResponse<Anime[]> = await jikanFetch(
-        `${JIKAN_BASE_URL}/top/anime?filter=bypopularity&page=${page}`
-      );
-      return [...(fallback.data || [])].sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
-    }
+    return dedupeRequest(`topRated:${page}`, async () => {
+      try {
+        const json: JikanResponse<Anime[]> = await jikanFetch(
+          `${JIKAN_BASE_URL}/anime?order_by=score&sort=desc&min_score=1&page=${page}`,
+          0,
+          6000
+        );
+        return json.data || [];
+      } catch {
+        // MAL score-sorted queries often 504 when MyAnimeList is slow; popularity list is more reliable.
+        const fallback: JikanResponse<Anime[]> = await jikanFetch(
+          `${JIKAN_BASE_URL}/top/anime?filter=bypopularity&page=${page}`,
+          1
+        );
+        return [...(fallback.data || [])].sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
+      }
+    });
   },
 
   async getTrendingAnime(page: number = 1): Promise<Anime[]> {
-    const json: JikanResponse<Anime[]> = await jikanFetch(`${JIKAN_BASE_URL}/seasons/now?page=${page}`);
-    return json.data || [];
+    return dedupeRequest(`trending:${page}`, async () => {
+      const json: JikanResponse<Anime[]> = await jikanFetch(`${JIKAN_BASE_URL}/seasons/now?page=${page}`);
+      return json.data || [];
+    });
   },
 
   async getAnimeBySeason(year: number, season: string, page: number = 1): Promise<Anime[]> {

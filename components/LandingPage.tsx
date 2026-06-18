@@ -7,7 +7,11 @@ import { SlideButton } from './SlideButton';
 interface LandingPageProps {
   onEnter: () => void;
   onOpenIdentifier: () => void;
+  prefetchedTrending?: Anime[];
 }
+
+const toHeroAnime = (data: Anime[]) =>
+  data.filter((a) => a.images?.jpg?.large_image_url).slice(0, 8);
 
 const fadeUp = {
   hidden: { opacity: 0, y: 30 },
@@ -69,7 +73,7 @@ const AUDIENCES = [
 
 const TOUCH_ANIM_DURATION_MS = 350;
 
-const LandingPage: React.FC<LandingPageProps> = ({ onEnter, onOpenIdentifier }) => {
+const LandingPage: React.FC<LandingPageProps> = ({ onEnter, onOpenIdentifier, prefetchedTrending }) => {
   const [heroAnime, setHeroAnime] = useState<Anime[]>([]);
   const [showCommunityTooltip, setShowCommunityTooltip] = useState(false);
   const [animeCount, setAnimeCount] = useState<string | null>(null);
@@ -85,13 +89,23 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnter, onOpenIdentifier }) 
   }, [showCommunityTooltip]);
 
   useEffect(() => {
-    jikanService.getTrendingAnime(1).then(data => {
-      if (data?.length) setHeroAnime(data.filter(a => a.images?.jpg?.large_image_url).slice(0, 8));
-    }).catch(() => {});
+    if (prefetchedTrending?.length) {
+      setHeroAnime(toHeroAnime(prefetchedTrending));
+      return;
+    }
 
-    jikanService.getTotalCount().then(total => {
-      if (total) setAnimeCount(`${Math.floor(total / 1000)}k+`);
-    });
+    jikanService.getTrendingAnime(1).then((data) => {
+      if (data?.length) setHeroAnime(toHeroAnime(data));
+    }).catch(() => {});
+  }, [prefetchedTrending]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      jikanService.getTotalCount().then((total) => {
+        if (total) setAnimeCount(`${Math.floor(total / 1000)}k+`);
+      }).catch(() => {});
+    }, 1500);
+    return () => clearTimeout(timer);
   }, []);
 
   return (

@@ -19,6 +19,14 @@ import { CATEGORIES } from './constants';
 import { parseJsonResponse } from './utils/parseJsonResponse';
 import { authHeaders, getStoredToken, setStoredToken } from './utils/authToken';
 
+type AppView = 'landing' | 'home' | 'charts' | 'library';
+
+type AppHistoryState = {
+  view: AppView;
+  modal?: 'anime' | 'identify' | 'login' | null;
+  animeId?: number | null;
+};
+
 const App: React.FC = () => {
   const [trending, setTrending] = useState<Anime[]>([]);
   const [topRated, setTopRated] = useState<Anime[]>([]);
@@ -27,18 +35,113 @@ const App: React.FC = () => {
   const [isInitialFetch, setIsInitialFetch] = useState(true);
   const [isMoreLoading, setIsMoreLoading] = useState(false);
   const [page, setPage] = useState(1);
-  const [showIdentifier, setShowIdentifier] = useState(false);
-  const [watchingAnimeId, setWatchingAnimeId] = useState<number | null>(null);
+  const [showIdentifier, setShowIdentifier] = useState(() => {
+    return (window.history.state as AppHistoryState | null)?.modal === 'identify';
+  });
+  const [watchingAnimeId, setWatchingAnimeId] = useState<number | null>(() => {
+    const state = window.history.state as AppHistoryState | null;
+    return state?.modal === 'anime' && state.animeId != null ? state.animeId : null;
+  });
   const [searchQuery, setSearchQuery] = useState('');
   const [suggestions, setSuggestions] = useState<Anime[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   
   // New States
-  const [activeView, setActiveView] = useState('landing');
+  const [activeView, setActiveView] = useState<AppView>(() => {
+    return (window.history.state as AppHistoryState | null)?.view ?? 'landing';
+  });
   const [user, setUser] = useState<any>(null);
   const [library, setLibrary] = useState<any[]>([]);
-  const [showLogin, setShowLogin] = useState(false);
+  const [showLogin, setShowLogin] = useState(() => {
+    return (window.history.state as AppHistoryState | null)?.modal === 'login';
+  });
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+  const historyNavRef = useRef(false);
+  const activeViewRef = useRef<AppView>(activeView);
+
+  const applyHistoryState = (state: AppHistoryState | null) => {
+    const view = state?.view ?? 'landing';
+    setActiveView(view);
+    activeViewRef.current = view;
+
+    if (state?.modal === 'anime' && state.animeId != null) {
+      setWatchingAnimeId(state.animeId);
+      setShowIdentifier(false);
+      setShowLogin(false);
+    } else if (state?.modal === 'identify') {
+      setWatchingAnimeId(null);
+      setShowIdentifier(true);
+      setShowLogin(false);
+    } else if (state?.modal === 'login') {
+      setWatchingAnimeId(null);
+      setShowIdentifier(false);
+      setShowLogin(true);
+    } else {
+      setWatchingAnimeId(null);
+      setShowIdentifier(false);
+      setShowLogin(false);
+    }
+  };
+
+  const pushAppHistory = (state: AppHistoryState, replace = false) => {
+    const url = window.location.pathname + window.location.search;
+    if (replace) {
+      window.history.replaceState(state, '', url);
+    } else {
+      window.history.pushState(state, '', url);
+    }
+  };
+
+  const navigateToView = (
+    view: AppView,
+    options?: { replace?: boolean; modal?: AppHistoryState['modal']; animeId?: number | null }
+  ) => {
+    const state: AppHistoryState = {
+      view,
+      modal: options?.modal ?? null,
+      animeId: options?.animeId ?? null,
+    };
+    applyHistoryState(state);
+    if (!historyNavRef.current) {
+      pushAppHistory(state, options?.replace ?? false);
+    }
+  };
+
+  const openOverlay = (modal: NonNullable<AppHistoryState['modal']>, animeId?: number | null) => {
+    const state: AppHistoryState = {
+      view: activeViewRef.current,
+      modal,
+      animeId: animeId ?? null,
+    };
+    if (modal === 'anime' && animeId != null) {
+      setWatchingAnimeId(animeId);
+      setShowIdentifier(false);
+      setShowLogin(false);
+    } else if (modal === 'identify') {
+      setWatchingAnimeId(null);
+      setShowIdentifier(true);
+      setShowLogin(false);
+    } else if (modal === 'login') {
+      setWatchingAnimeId(null);
+      setShowIdentifier(false);
+      setShowLogin(true);
+    }
+    if (!historyNavRef.current) {
+      pushAppHistory(state, activeViewRef.current === 'landing');
+    }
+  };
+
+  const closeOverlay = () => {
+    const state = window.history.state as AppHistoryState | null;
+    if (state?.modal && !historyNavRef.current) {
+      window.history.back();
+      return;
+    }
+    setWatchingAnimeId(null);
+    setShowIdentifier(false);
+    setShowLogin(false);
+  };
 
   // Season Selection
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
@@ -86,42 +189,56 @@ const App: React.FC = () => {
   }, [isCategoryCarouselPaused]);
 
   useEffect(() => {
-    const TIMEOUT_MS = 25000;
+    activeViewRef.current = activeView;
+  }, [activeView]);
+
+  useEffect(() => {
+    const onPopState = (e: PopStateEvent) => {
+      historyNavRef.current = true;
+      applyHistoryState(e.state as AppHistoryState | null);
+      historyNavRef.current = false;
+    };
+
+    window.addEventListener('popstate', onPopState);
+
+    const existing = window.history.state as AppHistoryState | null;
+    if (!existing?.view) {
+      pushAppHistory({ view: 'landing' }, true);
+    }
+
+    return () => window.removeEventListener('popstate', onPopState);
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
 
     const fetchData = async () => {
-      const timeoutPromise = new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error('Load timeout')), TIMEOUT_MS)
-      );
-
       try {
-        const [trendingResult, topResult] = await Promise.race([
-          Promise.allSettled([
-            jikanService.getTrendingAnime(),
-            jikanService.getTopRatedByScore()
-          ]),
-          timeoutPromise
-        ]) as [PromiseSettledResult<Anime[]>, PromiseSettledResult<Anime[]>];
-
-        const trendingData = trendingResult.status === 'fulfilled' ? trendingResult.value : [];
-        const topData = topResult.status === 'fulfilled' ? topResult.value : [];
-
-        if (trendingResult.status === 'rejected') {
-          console.error("Error fetching trending anime", trendingResult.reason);
+        const trendingData = await jikanService.getTrendingAnime();
+        if (!cancelled) {
+          setTrending(trendingData || []);
+          setIsInitialFetch(false);
         }
-        if (topResult.status === 'rejected') {
-          console.error("Error fetching top rated anime", topResult.reason);
-        }
-
-        setTrending(trendingData || []);
-        setTopRated(topData || []);
       } catch (err) {
-        console.error("Error fetching initial data", err);
-        setTrending([]);
-        setTopRated([]);
-      } finally {
-        setIsInitialFetch(false);
+        console.error("Error fetching trending anime", err);
+        if (!cancelled) {
+          setTrending([]);
+          setIsInitialFetch(false);
+        }
       }
 
+      try {
+        const topData = await jikanService.getTopRatedByScore();
+        if (!cancelled) setTopRated(topData || []);
+      } catch (err) {
+        console.error("Error fetching top rated anime", err);
+        if (!cancelled) setTopRated([]);
+      }
+    };
+
+    fetchData();
+
+    (async () => {
       try {
         if (!getStoredToken()) return;
         const authRes = await fetch('/api/auth/me', { headers: authHeaders() });
@@ -139,8 +256,11 @@ const App: React.FC = () => {
       } catch (authErr) {
         console.error("Auth check failed", authErr);
       }
+    })();
+
+    return () => {
+      cancelled = true;
     };
-    fetchData();
   }, []);
 
   // Deep-link: ?anime=MAL_ID opens the detail modal directly, then strips the param.
@@ -149,9 +269,11 @@ const App: React.FC = () => {
     const animeParam = params.get('anime');
     if (!animeParam) return;
     const malId = parseInt(animeParam, 10);
-    if (!Number.isNaN(malId)) setWatchingAnimeId(malId);
+    if (!Number.isNaN(malId)) {
+      navigateToView('home', { replace: true, modal: 'anime', animeId: malId });
+    }
     const clean = window.location.pathname + window.location.hash;
-    window.history.replaceState(null, '', clean);
+    window.history.replaceState(window.history.state, '', clean);
   }, []);
 
   const fetchLibrary = async () => {
@@ -175,7 +297,7 @@ const App: React.FC = () => {
       setPage(1);
       const results = await jikanService.searchAnime(query, 1);
       setTrending(results);
-      setActiveView('home');
+      navigateToView('home', { replace: true });
       setShowSuggestions(false);
     } catch (err) {
       console.error(err);
@@ -234,7 +356,7 @@ const App: React.FC = () => {
       setIsLoading(true);
       const data = await jikanService.getAnimeBySeason(year, season);
       setTrending(data);
-      setActiveView('home');
+      navigateToView('home', { replace: true });
     } catch (err) {
       console.error(err);
     } finally {
@@ -255,7 +377,7 @@ const App: React.FC = () => {
         const data = await jikanService.getAnimeByGenre(catId);
         setTrending(data);
       }
-      setActiveView('home');
+      navigateToView('home', { replace: true });
     } catch (err) {
       console.error(err);
     } finally {
@@ -264,12 +386,12 @@ const App: React.FC = () => {
   };
 
   const openWatch = (id: number) => {
-    setWatchingAnimeId(id);
+    openOverlay('anime', id);
   };
 
   const handleAddToLibrary = async (anime: Anime) => {
     if (!user) {
-      setShowLogin(true);
+      openOverlay('login');
       return;
     }
     try {
@@ -324,27 +446,33 @@ const App: React.FC = () => {
     setStoredToken(null);
     setUser(null);
     setLibrary([]);
-    setActiveView('home');
+    navigateToView('home', { replace: true });
   };
 
   const resetHome = async () => {
     setSearchQuery('');
     setActiveCategory(0);
     setIsSeasonFilterActive(false);
+    navigateToView('home');
+    const showBlockingSpinner = trending.length === 0;
     try {
-      setIsLoading(true);
-      const [trendingResult, topResult] = await Promise.allSettled([
-        jikanService.getTrendingAnime(),
-        jikanService.getTopRatedByScore()
-      ]);
-      setTrending(trendingResult.status === 'fulfilled' ? trendingResult.value : []);
-      setTopRated(topResult.status === 'fulfilled' ? topResult.value : []);
-      setActiveView('home');
+      if (showBlockingSpinner) setIsLoading(true);
+      const trendingData = await jikanService.getTrendingAnime();
+      setTrending(trendingData || []);
+      jikanService.getTopRatedByScore()
+        .then((data) => setTopRated(data || []))
+        .catch((err) => console.error("Error fetching top rated anime", err));
     } catch (err) {
       console.error("Error resetting home", err);
     } finally {
-      setIsLoading(false);
+      if (showBlockingSpinner) setIsLoading(false);
     }
+  };
+
+  const handleViewChange = (v: string) => {
+    if (v === 'home') resetHome();
+    else if (v === 'login') openOverlay('login');
+    else navigateToView(v as AppView);
   };
 
   const renderContent = () => {
@@ -495,7 +623,7 @@ const App: React.FC = () => {
                 </div>
 
                 <button 
-                  onClick={() => setActiveView('charts')}
+                  onClick={() => navigateToView('charts')}
                   className="font-mono text-[12px] tracking-[0.2em] uppercase text-muted hover:text-paper flex items-center gap-2 transition-colors"
                 >
                   View all →
@@ -542,7 +670,7 @@ const App: React.FC = () => {
                   </p>
                 </div>
                 <button 
-                  onClick={() => setActiveView('charts')}
+                  onClick={() => navigateToView('charts')}
                   className="font-mono text-[12px] tracking-[0.2em] uppercase text-muted hover:text-paper flex items-center gap-2 transition-colors"
                 >
                   View all →
@@ -561,7 +689,7 @@ const App: React.FC = () => {
   };
 
   const enterApp = () => {
-    setActiveView('home');
+    navigateToView('home', { replace: true });
   };
 
   if (activeView === 'landing') {
@@ -569,22 +697,21 @@ const App: React.FC = () => {
       <div className="font-body bg-ink text-paper dark">
         <LandingPage
           onEnter={enterApp}
-          onOpenIdentifier={() => setShowIdentifier(true)}
+          onOpenIdentifier={() => openOverlay('identify')}
+          prefetchedTrending={trending}
         />
         {showIdentifier && (
           <IdentificationModal
-            onClose={() => setShowIdentifier(false)}
+            onClose={closeOverlay}
             onViewAnime={(malId) => {
-              setShowIdentifier(false);
-              setWatchingAnimeId(malId);
-              setActiveView('home');
+              navigateToView('home', { replace: true, modal: 'anime', animeId: malId });
             }}
           />
         )}
         {watchingAnimeId !== null && (
           <AnimeDetailsModal
             animeId={watchingAnimeId}
-            onClose={() => setWatchingAnimeId(null)}
+            onClose={closeOverlay}
             onAddToLibrary={handleAddToLibrary}
             isInLibrary={!!library.find(a => a.mal_id === watchingAnimeId)}
           />
@@ -599,11 +726,7 @@ const App: React.FC = () => {
       <div className="hidden lg:block">
         <Sidebar 
           activeView={activeView} 
-          onViewChange={(v) => {
-            if (v === 'home') resetHome();
-            else if (v === 'login') setShowLogin(true);
-            else setActiveView(v);
-          }} 
+          onViewChange={handleViewChange} 
           user={user}
           onLogout={handleLogout}
         />
@@ -630,9 +753,7 @@ const App: React.FC = () => {
                 activeView={activeView} 
                 onViewChange={(v) => {
                   setIsSidebarOpen(false);
-                  if (v === 'home') resetHome();
-                  else if (v === 'login') setShowLogin(true);
-                  else setActiveView(v);
+                  handleViewChange(v);
                 }} 
                 user={user}
                 onLogout={handleLogout}
@@ -702,7 +823,7 @@ const App: React.FC = () => {
 
           <div className="flex items-center gap-2 md:gap-4">
             <button 
-              onClick={() => setShowIdentifier(true)}
+              onClick={() => openOverlay('identify')}
               className="p-2.5 md:px-4 md:py-2.5 min-w-[44px] min-h-[44px] md:min-w-0 md:min-h-0 flex items-center justify-center gap-2 bg-primary text-paper font-mono text-[12px] tracking-[0.15em] uppercase hover:brightness-110 transition-all active:scale-95 shadow-lg shadow-primary/20"
             >
               <span className="material-symbols-outlined !text-xl">auto_awesome</span>
@@ -716,7 +837,7 @@ const App: React.FC = () => {
               onMarkAllAsRead={markAllAsRead}
             />
             <button 
-              onClick={() => setActiveView('library')}
+              onClick={() => navigateToView('library')}
               className={`p-2.5 min-w-[44px] min-h-[44px] flex items-center justify-center transition-all ${activeView === 'library' ? 'bg-primary text-paper' : 'bg-paper/[0.03] border border-paper/10 text-muted hover:text-paper hover:bg-primary'}`}
             >
               <span className="material-symbols-outlined">favorite</span>
@@ -749,10 +870,9 @@ const App: React.FC = () => {
 
       {showIdentifier && (
         <IdentificationModal
-          onClose={() => setShowIdentifier(false)}
+          onClose={closeOverlay}
           onViewAnime={(malId) => {
-            setShowIdentifier(false);
-            setWatchingAnimeId(malId);
+            openOverlay('anime', malId);
           }}
         />
       )}
@@ -760,7 +880,7 @@ const App: React.FC = () => {
       {watchingAnimeId !== null && (
         <AnimeDetailsModal 
           animeId={watchingAnimeId} 
-          onClose={() => setWatchingAnimeId(null)} 
+          onClose={closeOverlay} 
           onAddToLibrary={handleAddToLibrary}
           isInLibrary={!!library.find(a => a.mal_id === watchingAnimeId)}
         />
@@ -768,7 +888,7 @@ const App: React.FC = () => {
 
       {showLogin && (
         <LoginModal 
-          onClose={() => setShowLogin(false)} 
+          onClose={closeOverlay} 
           onLogin={(u) => {
             setUser(u);
             fetchLibrary();
