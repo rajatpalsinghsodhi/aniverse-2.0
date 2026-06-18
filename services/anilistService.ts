@@ -40,41 +40,69 @@ function mapAnilistToAnime(media: AnilistSearchMedia): Anime {
   };
 }
 
+const TRENDING_QUERY = `
+  query ($page: Int, $perPage: Int) {
+    Page(page: $page, perPage: $perPage) {
+      media(type: ANIME, season: SPRING, seasonYear: 2026, sort: [POPULARITY_DESC]) {
+        id idMal
+        title { romaji english }
+        coverImage { large }
+        averageScore episodes format status duration popularity genres
+      }
+    }
+  }
+`;
+
+const TOP_RATED_QUERY = `
+  query ($page: Int, $perPage: Int) {
+    Page(page: $page, perPage: $perPage) {
+      media(type: ANIME, sort: [SCORE_DESC], averageScore_greater: 1) {
+        id idMal
+        title { romaji english }
+        coverImage { large }
+        averageScore episodes format status duration popularity genres
+      }
+    }
+  }
+`;
+
+async function anilistFetch(query: string, variables: Record<string, unknown>): Promise<AnilistSearchMedia[]> {
+  const response = await fetch(ANILIST_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+    body: JSON.stringify({ query, variables }),
+  });
+  if (!response.ok) throw new Error(`AniList ${response.status}`);
+  const json = await response.json();
+  return json.data?.Page?.media ?? [];
+}
+
 export const anilistService = {
+  async getTrending(page: number = 1): Promise<Anime[]> {
+    const media = await anilistFetch(TRENDING_QUERY, { page, perPage: 25 });
+    return media.map(mapAnilistToAnime);
+  },
+
+  async getTopRated(page: number = 1): Promise<Anime[]> {
+    const media = await anilistFetch(TOP_RATED_QUERY, { page, perPage: 25 });
+    return media.map(mapAnilistToAnime);
+  },
+
   /** Bypass when Jikan/MAL search is unavailable (504). */
   async searchAnime(query: string, page: number = 1): Promise<Anime[]> {
-    const gql = `
+    const SEARCH_QUERY = `
       query ($search: String, $page: Int) {
         Page(page: $page, perPage: 25) {
           media(search: $search, type: ANIME) {
-            id
-            idMal
+            id idMal
             title { romaji english }
             coverImage { large }
-            averageScore
-            episodes
-            format
-            status
-            duration
-            popularity
-            genres
+            averageScore episodes format status duration popularity genres
           }
         }
       }
     `;
-
-    const response = await fetch(ANILIST_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-      body: JSON.stringify({ query: gql, variables: { search: query, page } }),
-    });
-
-    if (!response.ok) {
-      throw new Error(`AniList search ${response.status}`);
-    }
-
-    const json = await response.json();
-    const media: AnilistSearchMedia[] = json.data?.Page?.media ?? [];
+    const media = await anilistFetch(SEARCH_QUERY, { search: query, page });
     return media.map(mapAnilistToAnime);
   },
 

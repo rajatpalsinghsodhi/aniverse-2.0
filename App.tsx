@@ -27,6 +27,79 @@ type AppHistoryState = {
   animeId?: number | null;
 };
 
+const ROUTE_VIEWS: AppView[] = ['home', 'charts', 'library'];
+
+const emptyAppState = (): AppHistoryState => ({
+  view: 'landing',
+  modal: null,
+  animeId: null,
+});
+
+/** Parse `#/home`, `#/charts?modal=login`, etc. Survives page refresh. */
+const parseAppUrl = (): AppHistoryState => {
+  const raw = window.location.hash.slice(1);
+  if (!raw || raw === '/') return emptyAppState();
+
+  const qIndex = raw.indexOf('?');
+  const pathPart = qIndex >= 0 ? raw.slice(0, qIndex) : raw;
+  const queryPart = qIndex >= 0 ? raw.slice(qIndex + 1) : '';
+
+  const viewName = pathPart.replace(/^\//, '').split('/').filter(Boolean)[0];
+  if (!viewName || !ROUTE_VIEWS.includes(viewName as AppView)) {
+    return emptyAppState();
+  }
+
+  const state: AppHistoryState = {
+    view: viewName as AppView,
+    modal: null,
+    animeId: null,
+  };
+
+  if (queryPart) {
+    const params = new URLSearchParams(queryPart);
+    const anime = params.get('anime');
+    const modal = params.get('modal');
+    if (anime) {
+      const id = parseInt(anime, 10);
+      if (!Number.isNaN(id)) {
+        state.modal = 'anime';
+        state.animeId = id;
+      }
+    } else if (modal === 'identify' || modal === 'login') {
+      state.modal = modal;
+    }
+  }
+
+  return state;
+};
+
+const buildAppUrl = (state: AppHistoryState): string => {
+  const base = window.location.pathname + window.location.search;
+  if (state.view === 'landing') return base;
+
+  let hash = `#/${state.view}`;
+  const params = new URLSearchParams();
+  if (state.modal === 'anime' && state.animeId != null) {
+    params.set('anime', String(state.animeId));
+  } else if (state.modal === 'identify') {
+    params.set('modal', 'identify');
+  } else if (state.modal === 'login') {
+    params.set('modal', 'login');
+  }
+  const qs = params.toString();
+  if (qs) hash += `?${qs}`;
+  return `${base}${hash}`;
+};
+
+const getInitialAppState = (): AppHistoryState => {
+  const fromUrl = parseAppUrl();
+  if (fromUrl.view !== 'landing') return fromUrl;
+
+  const fromHistory = window.history.state as AppHistoryState | null;
+  if (fromHistory?.view) return fromHistory;
+  return emptyAppState();
+};
+
 const App: React.FC = () => {
   const [trending, setTrending] = useState<Anime[]>([]);
   const [topRated, setTopRated] = useState<Anime[]>([]);
@@ -36,25 +109,21 @@ const App: React.FC = () => {
   const [isMoreLoading, setIsMoreLoading] = useState(false);
   const [page, setPage] = useState(1);
   const [showIdentifier, setShowIdentifier] = useState(() => {
-    return (window.history.state as AppHistoryState | null)?.modal === 'identify';
+    return getInitialAppState().modal === 'identify';
   });
   const [watchingAnimeId, setWatchingAnimeId] = useState<number | null>(() => {
-    const state = window.history.state as AppHistoryState | null;
-    return state?.modal === 'anime' && state.animeId != null ? state.animeId : null;
+    const state = getInitialAppState();
+    return state.modal === 'anime' && state.animeId != null ? state.animeId : null;
   });
   const [searchQuery, setSearchQuery] = useState('');
   const [suggestions, setSuggestions] = useState<Anime[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   
   // New States
-  const [activeView, setActiveView] = useState<AppView>(() => {
-    return (window.history.state as AppHistoryState | null)?.view ?? 'landing';
-  });
+  const [activeView, setActiveView] = useState<AppView>(() => getInitialAppState().view);
   const [user, setUser] = useState<any>(null);
   const [library, setLibrary] = useState<any[]>([]);
-  const [showLogin, setShowLogin] = useState(() => {
-    return (window.history.state as AppHistoryState | null)?.modal === 'login';
-  });
+  const [showLogin, setShowLogin] = useState(() => getInitialAppState().modal === 'login');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   const historyNavRef = useRef(false);
@@ -85,7 +154,7 @@ const App: React.FC = () => {
   };
 
   const pushAppHistory = (state: AppHistoryState, replace = false) => {
-    const url = window.location.pathname + window.location.search;
+    const url = buildAppUrl(state);
     if (replace) {
       window.history.replaceState(state, '', url);
     } else {
@@ -195,16 +264,13 @@ const App: React.FC = () => {
   useEffect(() => {
     const onPopState = (e: PopStateEvent) => {
       historyNavRef.current = true;
-      applyHistoryState(e.state as AppHistoryState | null);
+      applyHistoryState((e.state as AppHistoryState | null) ?? parseAppUrl());
       historyNavRef.current = false;
     };
 
     window.addEventListener('popstate', onPopState);
 
-    const existing = window.history.state as AppHistoryState | null;
-    if (!existing?.view) {
-      pushAppHistory({ view: 'landing' }, true);
-    }
+    pushAppHistory(getInitialAppState(), true);
 
     return () => window.removeEventListener('popstate', onPopState);
   }, []);
@@ -213,26 +279,26 @@ const App: React.FC = () => {
     let cancelled = false;
 
     const fetchData = async () => {
-      try {
-        const trendingData = await jikanService.getTrendingAnime();
-        if (!cancelled) {
-          setTrending(trendingData || []);
-          setIsInitialFetch(false);
-        }
-      } catch (err) {
-        console.error("Error fetching trending anime", err);
-        if (!cancelled) {
-          setTrending([]);
-          setIsInitialFetch(false);
-        }
-      }
+      const [trendingResult, topResult] = await Promise.allSettled([
+        jikanService.getTrendingAnime(),
+        jikanService.getTopRatedByScore(),
+      ]);
 
-      try {
-        const topData = await jikanService.getTopRatedByScore();
-        if (!cancelled) setTopRated(topData || []);
-      } catch (err) {
-        console.error("Error fetching top rated anime", err);
-        if (!cancelled) setTopRated([]);
+      if (cancelled) return;
+
+      if (trendingResult.status === 'fulfilled') {
+        setTrending(trendingResult.value || []);
+      } else {
+        console.error("Error fetching trending anime", trendingResult.reason);
+        setTrending([]);
+      }
+      setIsInitialFetch(false);
+
+      if (topResult.status === 'fulfilled') {
+        setTopRated(topResult.value || []);
+      } else {
+        console.error("Error fetching top rated anime", topResult.reason);
+        setTopRated([]);
       }
     };
 
@@ -263,7 +329,7 @@ const App: React.FC = () => {
     };
   }, []);
 
-  // Deep-link: ?anime=MAL_ID opens the detail modal directly, then strips the param.
+  // Legacy deep-link: ?anime=MAL_ID on path → migrate to hash route.
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const animeParam = params.get('anime');
@@ -272,8 +338,6 @@ const App: React.FC = () => {
     if (!Number.isNaN(malId)) {
       navigateToView('home', { replace: true, modal: 'anime', animeId: malId });
     }
-    const clean = window.location.pathname + window.location.hash;
-    window.history.replaceState(window.history.state, '', clean);
   }, []);
 
   const fetchLibrary = async () => {
@@ -457,11 +521,12 @@ const App: React.FC = () => {
     const showBlockingSpinner = trending.length === 0;
     try {
       if (showBlockingSpinner) setIsLoading(true);
-      const trendingData = await jikanService.getTrendingAnime();
-      setTrending(trendingData || []);
-      jikanService.getTopRatedByScore()
-        .then((data) => setTopRated(data || []))
-        .catch((err) => console.error("Error fetching top rated anime", err));
+      const [trendingResult, topResult] = await Promise.allSettled([
+        jikanService.getTrendingAnime(),
+        jikanService.getTopRatedByScore(),
+      ]);
+      if (trendingResult.status === 'fulfilled') setTrending(trendingResult.value || []);
+      if (topResult.status === 'fulfilled') setTopRated(topResult.value || []);
     } catch (err) {
       console.error("Error resetting home", err);
     } finally {
