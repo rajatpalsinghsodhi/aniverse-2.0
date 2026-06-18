@@ -279,7 +279,8 @@ const App: React.FC = () => {
 
       if (isLanding && entered) {
         const homeState: AppHistoryState = { view: 'home', modal: null, animeId: null };
-        window.history.pushState(homeState, '', buildAppUrl(homeState));
+        window.history.replaceState(homeState, '', buildAppUrl(homeState));
+        applyHistoryState(homeState);
         return;
       }
 
@@ -777,7 +778,7 @@ const App: React.FC = () => {
 
   const enterApp = () => {
     try { sessionStorage.setItem(SESSION_KEY, '1'); } catch (_) {}
-    navigateToView('home');
+    navigateToView('home', { replace: true });
   };
 
   if (activeView === 'landing') {
