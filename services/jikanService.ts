@@ -15,8 +15,11 @@ async function jikanFetch(url: string, retries = 3): Promise<any> {
 
   const res = await fetch(url);
 
-  if (res.status === 429 && retries > 0) {
-    const retryAfter = parseInt(res.headers.get('Retry-After') || '2', 10);
+  if ((res.status === 429 || res.status >= 500) && retries > 0) {
+    const retryAfter =
+      res.status === 429
+        ? parseInt(res.headers.get('Retry-After') || '2', 10)
+        : 2 * (4 - retries);
     await new Promise(r => setTimeout(r, retryAfter * 1000));
     return jikanFetch(url, retries - 1);
   }
@@ -31,10 +34,19 @@ async function jikanFetch(url: string, retries = 3): Promise<any> {
 export const jikanService = {
   /** Highest scored titles (home “Highest rated” row; not the popularity top list). */
   async getTopRatedByScore(page: number = 1): Promise<Anime[]> {
-    const json: JikanResponse<Anime[]> = await jikanFetch(
-      `${JIKAN_BASE_URL}/anime?order_by=score&sort=desc&min_score=1&page=${page}`
-    );
-    return json.data || [];
+    try {
+      const json: JikanResponse<Anime[]> = await jikanFetch(
+        `${JIKAN_BASE_URL}/anime?order_by=score&sort=desc&min_score=1&page=${page}`,
+        0
+      );
+      return json.data || [];
+    } catch {
+      // MAL score-sorted queries often 504 when MyAnimeList is slow; popularity list is more reliable.
+      const fallback: JikanResponse<Anime[]> = await jikanFetch(
+        `${JIKAN_BASE_URL}/top/anime?filter=bypopularity&page=${page}`
+      );
+      return [...(fallback.data || [])].sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
+    }
   },
 
   async getTrendingAnime(page: number = 1): Promise<Anime[]> {
