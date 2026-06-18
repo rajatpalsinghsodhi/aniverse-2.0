@@ -28,6 +28,7 @@ type AppHistoryState = {
 };
 
 const ROUTE_VIEWS: AppView[] = ['home', 'charts', 'library'];
+const SESSION_KEY = 'animeverse_entered';
 
 const emptyAppState = (): AppHistoryState => ({
   view: 'landing',
@@ -74,7 +75,7 @@ const parseAppUrl = (): AppHistoryState => {
 };
 
 const buildAppUrl = (state: AppHistoryState): string => {
-  const base = window.location.pathname + window.location.search;
+  const base = window.location.pathname;
   if (state.view === 'landing') return base;
 
   let hash = `#/${state.view}`;
@@ -95,8 +96,15 @@ const getInitialAppState = (): AppHistoryState => {
   const fromUrl = parseAppUrl();
   if (fromUrl.view !== 'landing') return fromUrl;
 
+  try {
+    if (sessionStorage.getItem(SESSION_KEY)) {
+      return { view: 'home', modal: null, animeId: null };
+    }
+  } catch (_) { /* private browsing */ }
+
   const fromHistory = window.history.state as AppHistoryState | null;
-  if (fromHistory?.view) return fromHistory;
+  if (fromHistory?.view && ROUTE_VIEWS.includes(fromHistory.view as AppView))
+    return fromHistory;
   return emptyAppState();
 };
 
@@ -263,14 +271,27 @@ const App: React.FC = () => {
 
   useEffect(() => {
     const onPopState = (e: PopStateEvent) => {
+      const state = (e.state as AppHistoryState | null) ?? parseAppUrl();
+
+      const isLanding = !state?.view || state.view === 'landing';
+      let entered = false;
+      try { entered = !!sessionStorage.getItem(SESSION_KEY); } catch (_) {}
+
+      if (isLanding && entered) {
+        const homeState: AppHistoryState = { view: 'home', modal: null, animeId: null };
+        window.history.pushState(homeState, '', buildAppUrl(homeState));
+        return;
+      }
+
       historyNavRef.current = true;
-      applyHistoryState((e.state as AppHistoryState | null) ?? parseAppUrl());
+      applyHistoryState(state);
       historyNavRef.current = false;
     };
 
     window.addEventListener('popstate', onPopState);
 
-    pushAppHistory(getInitialAppState(), true);
+    const initial = getInitialAppState();
+    pushAppHistory(initial, true);
 
     return () => window.removeEventListener('popstate', onPopState);
   }, []);
@@ -336,6 +357,7 @@ const App: React.FC = () => {
     if (!animeParam) return;
     const malId = parseInt(animeParam, 10);
     if (!Number.isNaN(malId)) {
+      try { sessionStorage.setItem(SESSION_KEY, '1'); } catch (_) {}
       navigateToView('home', { replace: true, modal: 'anime', animeId: malId });
     }
   }, []);
@@ -754,7 +776,8 @@ const App: React.FC = () => {
   };
 
   const enterApp = () => {
-    navigateToView('home', { replace: true });
+    try { sessionStorage.setItem(SESSION_KEY, '1'); } catch (_) {}
+    navigateToView('home');
   };
 
   if (activeView === 'landing') {
