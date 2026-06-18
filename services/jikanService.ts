@@ -1,27 +1,77 @@
 
 import { JIKAN_BASE_URL } from '../constants';
 import { Anime, JikanResponse, AnimeEpisode, AnimeRecommendationItem } from '../types';
+import { anilistService } from './anilistService';
 
-const RATE_LIMIT_DELAY = 350;
-let lastRequestTime = 0;
+// Jikan allows ~3 req/s. We use a queue so parallel callers don't all
+// fire at once, but the inter-request gap is small enough to not bottleneck
+// the initial page load.
+const RATE_LIMIT_MS = 150;
+let lastJikanSend = 0;
+const jikanQueue: Array<() => void> = [];
+let jikanDraining = false;
 
-async function jikanFetch(url: string, retries = 3): Promise<any> {
-  const now = Date.now();
-  const timeSinceLast = now - lastRequestTime;
-  if (timeSinceLast < RATE_LIMIT_DELAY) {
-    await new Promise(r => setTimeout(r, RATE_LIMIT_DELAY - timeSinceLast));
+function drainJikanQueue() {
+  if (jikanDraining) return;
+  jikanDraining = true;
+  const next = () => {
+    if (jikanQueue.length === 0) { jikanDraining = false; return; }
+    const now = Date.now();
+    const wait = Math.max(0, RATE_LIMIT_MS - (now - lastJikanSend));
+    setTimeout(() => {
+      lastJikanSend = Date.now();
+      const resolve = jikanQueue.shift();
+      resolve?.();
+      next();
+    }, wait);
+  };
+  next();
+}
+
+function waitForSlot(): Promise<void> {
+  return new Promise<void>((resolve) => {
+    jikanQueue.push(resolve);
+    drainJikanQueue();
+  });
+}
+
+const inflightRequests = new Map<string, Promise<unknown>>();
+
+function dedupeRequest<T>(key: string, fn: () => Promise<T>): Promise<T> {
+  const existing = inflightRequests.get(key);
+  if (existing) return existing as Promise<T>;
+  const promise = fn().finally(() => inflightRequests.delete(key));
+  inflightRequests.set(key, promise);
+  return promise;
+}
+
+async function jikanFetch(url: string, retries = 2, timeoutMs = 5000): Promise<any> {
+  await waitForSlot();
+
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+
+  let res: Response;
+  try {
+    res = await fetch(url, { signal: controller.signal });
+  } catch (err) {
+    clearTimeout(timer);
+    if (err instanceof Error && err.name === 'AbortError') {
+      throw new Error(`Jikan API timeout: ${url}`);
+    }
+    throw err;
   }
-  lastRequestTime = Date.now();
+  clearTimeout(timer);
 
-  const res = await fetch(url);
-
-  if ((res.status === 429 || res.status >= 500) && retries > 0) {
-    const retryAfter =
-      res.status === 429
-        ? parseInt(res.headers.get('Retry-After') || '2', 10)
-        : 2 * (4 - retries);
+  if (res.status === 429 && retries > 0) {
+    const retryAfter = parseInt(res.headers.get('Retry-After') || '2', 10);
     await new Promise(r => setTimeout(r, retryAfter * 1000));
-    return jikanFetch(url, retries - 1);
+    return jikanFetch(url, retries - 1, timeoutMs);
+  }
+
+  if (res.status >= 500 && retries > 0) {
+    await new Promise(r => setTimeout(r, 1500));
+    return jikanFetch(url, retries - 1, timeoutMs);
   }
 
   if (!res.ok) {
@@ -34,24 +84,33 @@ async function jikanFetch(url: string, retries = 3): Promise<any> {
 export const jikanService = {
   /** Highest scored titles (home “Highest rated” row; not the popularity top list). */
   async getTopRatedByScore(page: number = 1): Promise<Anime[]> {
-    try {
-      const json: JikanResponse<Anime[]> = await jikanFetch(
-        `${JIKAN_BASE_URL}/anime?order_by=score&sort=desc&min_score=1&page=${page}`,
-        0
-      );
-      return json.data || [];
-    } catch {
-      // MAL score-sorted queries often 504 when MyAnimeList is slow; popularity list is more reliable.
-      const fallback: JikanResponse<Anime[]> = await jikanFetch(
-        `${JIKAN_BASE_URL}/top/anime?filter=bypopularity&page=${page}`
-      );
-      return [...(fallback.data || [])].sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
-    }
+    return dedupeRequest(`topRated:${page}`, async () => {
+      try {
+        const json: JikanResponse<Anime[]> = await jikanFetch(
+          `${JIKAN_BASE_URL}/top/anime?filter=bypopularity&page=${page}`,
+          1,
+          4000
+        );
+        return [...(json.data || [])].sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
+      } catch {
+        return anilistService.getTopRated(page);
+      }
+    });
   },
 
   async getTrendingAnime(page: number = 1): Promise<Anime[]> {
-    const json: JikanResponse<Anime[]> = await jikanFetch(`${JIKAN_BASE_URL}/seasons/now?page=${page}`);
-    return json.data || [];
+    return dedupeRequest(`trending:${page}`, async () => {
+      try {
+        const json: JikanResponse<Anime[]> = await jikanFetch(
+          `${JIKAN_BASE_URL}/seasons/now?page=${page}`,
+          1,
+          4000
+        );
+        return json.data || [];
+      } catch {
+        return anilistService.getTrending(page);
+      }
+    });
   },
 
   async getAnimeBySeason(year: number, season: string, page: number = 1): Promise<Anime[]> {
@@ -65,8 +124,16 @@ export const jikanService = {
   },
 
   async searchAnime(query: string, page: number = 1): Promise<Anime[]> {
-    const json: JikanResponse<Anime[]> = await jikanFetch(`${JIKAN_BASE_URL}/anime?q=${encodeURIComponent(query)}&page=${page}`);
-    return json.data || [];
+    try {
+      const json: JikanResponse<Anime[]> = await jikanFetch(
+        `${JIKAN_BASE_URL}/anime?q=${encodeURIComponent(query)}&page=${page}`,
+        0
+      );
+      return json.data || [];
+    } catch {
+      // MAL-backed search often 504 when MyAnimeList is slow; AniList bypass keeps search working.
+      return anilistService.searchAnime(query, page);
+    }
   },
 
   async getAnimeDetails(id: number): Promise<Anime> {
