@@ -1,6 +1,7 @@
 
 import { JIKAN_BASE_URL } from '../constants';
 import { Anime, JikanResponse, AnimeEpisode, AnimeRecommendationItem } from '../types';
+import { anilistService } from './anilistService';
 
 const RATE_LIMIT_DELAY = 350;
 let lastRequestTime = 0;
@@ -96,8 +97,16 @@ export const jikanService = {
   },
 
   async searchAnime(query: string, page: number = 1): Promise<Anime[]> {
-    const json: JikanResponse<Anime[]> = await jikanFetch(`${JIKAN_BASE_URL}/anime?q=${encodeURIComponent(query)}&page=${page}`);
-    return json.data || [];
+    try {
+      const json: JikanResponse<Anime[]> = await jikanFetch(
+        `${JIKAN_BASE_URL}/anime?q=${encodeURIComponent(query)}&page=${page}`,
+        0
+      );
+      return json.data || [];
+    } catch {
+      // MAL-backed search often 504 when MyAnimeList is slow; AniList bypass keeps search working.
+      return anilistService.searchAnime(query, page);
+    }
   },
 
   async getAnimeDetails(id: number): Promise<Anime> {
