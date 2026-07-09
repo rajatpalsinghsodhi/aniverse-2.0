@@ -1,6 +1,6 @@
 
 import { JIKAN_BASE_URL } from '../constants';
-import { Anime, JikanResponse, AnimeEpisode, AnimeRecommendationItem } from '../types';
+import { Anime, JikanResponse, AnimeEpisode, AnimeRecommendationItem, TopChartFilter } from '../types';
 import { anilistService } from './anilistService';
 
 // Jikan allows ~3 req/s. We use a queue so parallel callers don't all
@@ -81,7 +81,40 @@ async function jikanFetch(url: string, retries = 2, timeoutMs = 5000): Promise<a
   return res.json();
 }
 
+export interface TopChartPage {
+  data: Anime[];
+  hasNextPage: boolean;
+}
+
+function getTopChartUrl(filter: TopChartFilter, page: number): string {
+  const base = `${JIKAN_BASE_URL}/anime?`;
+  switch (filter) {
+    case 'byscore':
+      return `${base}order_by=score&sort=desc&min_score=1&page=${page}`;
+    case 'bypopularity':
+      return `${base}order_by=popularity&sort=asc&page=${page}`;
+    case 'airing':
+      return `${base}status=airing&order_by=popularity&sort=asc&page=${page}`;
+  }
+}
+
 export const jikanService = {
+  /** Paginated top-chart lists for the Top Charts view. */
+  async getTopChartAnime(filter: TopChartFilter, page: number = 1): Promise<TopChartPage> {
+    return dedupeRequest(`topChart:${filter}:${page}`, async () => {
+      try {
+        const json: JikanResponse<Anime[]> = await jikanFetch(getTopChartUrl(filter, page), 1, 4000);
+        const data = json.data || [];
+        return {
+          data,
+          hasNextPage: (json.pagination?.has_next_page ?? false) && data.length > 0,
+        };
+      } catch {
+        return anilistService.getTopChartPage(filter, page);
+      }
+    });
+  },
+
   /** Highest scored titles (home “Highest rated” row; not the popularity top list). */
   async getTopRatedByScore(page: number = 1): Promise<Anime[]> {
     return dedupeRequest(`topRated:${page}`, async () => {

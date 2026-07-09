@@ -1,24 +1,29 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { Trophy, TrendingUp, Star, Users } from 'lucide-react';
-import { Anime } from '../types';
+import { Anime, TopChartFilter } from '../types';
 import AnimeCard from './AnimeCard';
+import { jikanService } from '../services/jikanService';
 
 const TopCharts: React.FC<{ onWatch: (id: number) => void }> = ({ onWatch }) => {
   const [topAnime, setTopAnime] = useState<Anime[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isMoreLoading, setIsMoreLoading] = useState(false);
   const [page, setPage] = useState(1);
-  const [filter, setFilter] = useState<'bypopularity' | 'favorite' | 'airing'>('bypopularity');
+  const [hasMore, setHasMore] = useState(true);
+  const [filter, setFilter] = useState<TopChartFilter>('bypopularity');
+  const sentinelRef = useRef<HTMLDivElement>(null);
+  const loadingRef = useRef(false);
 
   useEffect(() => {
     const fetchTop = async () => {
       try {
         setIsLoading(true);
         setPage(1);
-        const res = await fetch(`https://api.jikan.moe/v4/top/anime?filter=${filter}&page=1`);
-        const json = await res.json();
-        setTopAnime(json.data || []);
+        setHasMore(true);
+        const { data, hasNextPage } = await jikanService.getTopChartAnime(filter, 1);
+        setTopAnime(data);
+        setHasMore(hasNextPage);
       } catch (err) {
         console.error(err);
       } finally {
@@ -28,21 +33,38 @@ const TopCharts: React.FC<{ onWatch: (id: number) => void }> = ({ onWatch }) => 
     fetchTop();
   }, [filter]);
 
-  const loadMore = async () => {
-    if (isMoreLoading) return;
+  const loadMore = useCallback(async () => {
+    if (loadingRef.current || !hasMore) return;
+    loadingRef.current = true;
+    setIsMoreLoading(true);
     try {
-      setIsMoreLoading(true);
       const nextPage = page + 1;
-      const res = await fetch(`https://api.jikan.moe/v4/top/anime?filter=${filter}&page=${nextPage}`);
-      const json = await res.json();
-      setTopAnime(prev => [...prev, ...(json.data || [])]);
+      const { data, hasNextPage } = await jikanService.getTopChartAnime(filter, nextPage);
+      setTopAnime(prev => [...prev, ...data]);
       setPage(nextPage);
+      setHasMore(hasNextPage);
     } catch (err) {
       console.error(err);
     } finally {
+      loadingRef.current = false;
       setIsMoreLoading(false);
     }
-  };
+  }, [filter, page, hasMore]);
+
+  useEffect(() => {
+    if (isLoading || !hasMore) return;
+    const sentinel = sentinelRef.current;
+    if (!sentinel) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting) loadMore();
+      },
+      { rootMargin: '300px' }
+    );
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [isLoading, hasMore, loadMore]);
 
   return (
     <div className="p-4 sm:p-6 md:p-8 space-y-10">
@@ -59,13 +81,13 @@ const TopCharts: React.FC<{ onWatch: (id: number) => void }> = ({ onWatch }) => 
 
         <div className="flex flex-wrap gap-px p-0 bg-paper/[0.06] border border-paper/[0.06]">
           {[
-            { id: 'bypopularity', label: 'Popular', icon: Users },
-            { id: 'favorite', label: 'Favorites', icon: Star },
-            { id: 'airing', label: 'Top airing', icon: TrendingUp },
+            { id: 'bypopularity' as const, label: 'Popular', icon: Users },
+            { id: 'byscore' as const, label: 'Highest rated', icon: Star },
+            { id: 'airing' as const, label: 'Top airing', icon: TrendingUp },
           ].map((btn) => (
             <button
               key={btn.id}
-              onClick={() => setFilter(btn.id as any)}
+              onClick={() => setFilter(btn.id)}
               className={`flex items-center gap-2 px-6 py-2.5 font-mono text-[12px] tracking-[0.15em] uppercase transition-all ${
                 filter === btn.id 
                   ? 'bg-primary text-paper' 
@@ -104,20 +126,11 @@ const TopCharts: React.FC<{ onWatch: (id: number) => void }> = ({ onWatch }) => 
             ))}
           </div>
 
-          {topAnime.length > 0 && (
-            <div className="mt-16 flex justify-center">
-              <button 
-                onClick={loadMore}
-                disabled={isMoreLoading}
-                className="px-10 py-4 bg-paper/[0.03] border border-paper/10 text-paper font-mono text-[12px] tracking-[0.2em] uppercase hover:bg-primary hover:border-primary transition-all disabled:opacity-50 flex items-center gap-3"
-              >
-                {isMoreLoading ? (
-                  <div className="w-5 h-5 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
-                ) : (
-                  <TrendingUp size={18} />
-                )}
-                Load more on this chart
-              </button>
+          <div ref={sentinelRef} className="h-1" aria-hidden />
+
+          {isMoreLoading && (
+            <div className="flex justify-center py-8">
+              <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
             </div>
           )}
         </>

@@ -56,6 +56,7 @@ const TRENDING_QUERY = `
 const TOP_RATED_QUERY = `
   query ($page: Int, $perPage: Int) {
     Page(page: $page, perPage: $perPage) {
+      pageInfo { hasNextPage }
       media(type: ANIME, sort: [SCORE_DESC], averageScore_greater: 1) {
         id idMal
         title { romaji english }
@@ -66,7 +67,43 @@ const TOP_RATED_QUERY = `
   }
 `;
 
+const TOP_POPULAR_QUERY = `
+  query ($page: Int, $perPage: Int) {
+    Page(page: $page, perPage: $perPage) {
+      pageInfo { hasNextPage }
+      media(type: ANIME, sort: [POPULARITY_DESC]) {
+        id idMal
+        title { romaji english }
+        coverImage { large }
+        averageScore episodes format status duration popularity genres
+      }
+    }
+  }
+`;
+
+const TOP_AIRING_QUERY = `
+  query ($page: Int, $perPage: Int) {
+    Page(page: $page, perPage: $perPage) {
+      pageInfo { hasNextPage }
+      media(type: ANIME, status: RELEASING, sort: [POPULARITY_DESC]) {
+        id idMal
+        title { romaji english }
+        coverImage { large }
+        averageScore episodes format status duration popularity genres
+      }
+    }
+  }
+`;
+
 async function anilistFetch(query: string, variables: Record<string, unknown>): Promise<AnilistSearchMedia[]> {
+  const page = await anilistFetchPage(query, variables);
+  return page.media;
+}
+
+async function anilistFetchPage(
+  query: string,
+  variables: Record<string, unknown>
+): Promise<{ media: AnilistSearchMedia[]; hasNextPage: boolean }> {
   const response = await fetch(ANILIST_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
@@ -74,7 +111,11 @@ async function anilistFetch(query: string, variables: Record<string, unknown>): 
   });
   if (!response.ok) throw new Error(`AniList ${response.status}`);
   const json = await response.json();
-  return json.data?.Page?.media ?? [];
+  const pageData = json.data?.Page;
+  return {
+    media: pageData?.media ?? [],
+    hasNextPage: pageData?.pageInfo?.hasNextPage ?? false,
+  };
 }
 
 export const anilistService = {
@@ -84,8 +125,22 @@ export const anilistService = {
   },
 
   async getTopRated(page: number = 1): Promise<Anime[]> {
-    const media = await anilistFetch(TOP_RATED_QUERY, { page, perPage: 25 });
+    const { media } = await anilistFetchPage(TOP_RATED_QUERY, { page, perPage: 25 });
     return media.map(mapAnilistToAnime);
+  },
+
+  async getTopChartPage(
+    filter: 'bypopularity' | 'byscore' | 'airing',
+    page: number = 1
+  ): Promise<{ data: Anime[]; hasNextPage: boolean }> {
+    const query =
+      filter === 'byscore'
+        ? TOP_RATED_QUERY
+        : filter === 'airing'
+          ? TOP_AIRING_QUERY
+          : TOP_POPULAR_QUERY;
+    const { media, hasNextPage } = await anilistFetchPage(query, { page, perPage: 25 });
+    return { data: media.map(mapAnilistToAnime), hasNextPage };
   },
 
   /** Bypass when Jikan/MAL search is unavailable (504). */
