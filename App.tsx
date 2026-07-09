@@ -205,7 +205,11 @@ const App: React.FC = () => {
       setShowLogin(true);
     }
     if (!historyNavRef.current) {
-      pushAppHistory(state, activeViewRef.current === 'landing');
+      const current = window.history.state as AppHistoryState | null;
+      const replaceHistory =
+        activeViewRef.current === 'landing' ||
+        (current?.view === activeViewRef.current && current?.modal === modal);
+      pushAppHistory(state, replaceHistory);
     }
   };
 

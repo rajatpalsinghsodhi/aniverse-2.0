@@ -39,9 +39,12 @@ const AnimeDetailsModal: React.FC<AnimeDetailsModalProps> = ({ animeId, onClose,
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'info' | 'characters' | 'relations' | 'gallery' | 'similar' | 'watch'>('info');
   const [nextEpisodeLabel, setNextEpisodeLabel] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
 
   useEffect(() => {
     setCurrentAnimeId(animeId);
+    setActiveTab('info');
   }, [animeId]);
 
   const MAINSTREAM_PLATFORMS = [
@@ -50,17 +53,38 @@ const AnimeDetailsModal: React.FC<AnimeDetailsModalProps> = ({ animeId, onClose,
   ];
 
   useEffect(() => {
+    let cancelled = false;
+
     const fetchDetails = async () => {
+      setIsLoading(true);
+      setLoadError(null);
+      setAnime(null);
+      setStreamingLinks([]);
+      setCharacters([]);
+      setPictures([]);
+      setRelations([]);
+      setRecommendations([]);
+      setFallbackSynopsis(null);
+      setNextEpisodeLabel(null);
+
       try {
-        setIsLoading(true);
-        const [fullDetails, chars, pics, recs] = await Promise.all([
-          jikanService.getAnimeDetailsFull(currentAnimeId),
+        let fullDetails: Anime;
+        try {
+          fullDetails = await jikanService.getAnimeDetailsFull(currentAnimeId);
+        } catch {
+          fullDetails = await jikanService.getAnimeDetails(currentAnimeId);
+        }
+        if (cancelled) return;
+
+        setAnime(fullDetails);
+
+        const [charsResult, picsResult, recsResult] = await Promise.allSettled([
           jikanService.getAnimeCharacters(currentAnimeId),
           jikanService.getAnimePictures(currentAnimeId),
-          jikanService.getAnimeRecommendations(currentAnimeId).catch(() => [] as AnimeRecommendationItem[]),
+          jikanService.getAnimeRecommendations(currentAnimeId),
         ]);
-        setAnime(fullDetails);
-        setRecommendations(recs);
+
+        if (cancelled) return;
 
         const stream = fullDetails.streaming || [];
         const external = fullDetails.external || [];
@@ -69,24 +93,32 @@ const AnimeDetailsModal: React.FC<AnimeDetailsModalProps> = ({ animeId, onClose,
         const mergedLinks = [...stream, ...external]
           .filter((link: any) => MAINSTREAM_PLATFORMS.some(p => link.name.includes(p)))
           .filter((v: any, i: number, a: any[]) => a.findIndex(t => (t.name === v.name)) === i);
-        
+
         setStreamingLinks(mergedLinks);
-        setCharacters(chars.slice(0, 12));
-        setPictures(pics);
+        setCharacters(charsResult.status === 'fulfilled' ? charsResult.value.slice(0, 12) : []);
+        setPictures(picsResult.status === 'fulfilled' ? picsResult.value : []);
         setRelations(rels);
+        setRecommendations(recsResult.status === 'fulfilled' ? recsResult.value : []);
 
         if (!fullDetails.synopsis || fullDetails.synopsis.length < 100) {
           const kitsuSyn = await jikanService.getKitsuSynopsis(fullDetails.title);
-          setFallbackSynopsis(kitsuSyn);
+          if (!cancelled) setFallbackSynopsis(kitsuSyn);
         }
       } catch (err) {
-        console.error("Error fetching anime details", err);
+        console.error('Error fetching anime details', err);
+        if (!cancelled) {
+          setLoadError('Could not load this title right now. The catalog API may be busy — try again in a moment.');
+        }
       } finally {
-        setIsLoading(false);
+        if (!cancelled) setIsLoading(false);
       }
     };
+
     fetchDetails();
-  }, [currentAnimeId]);
+    return () => {
+      cancelled = true;
+    };
+  }, [currentAnimeId, retryCount]);
 
   useEffect(() => {
     const loadNextEpisode = async () => {
@@ -129,7 +161,40 @@ const AnimeDetailsModal: React.FC<AnimeDetailsModalProps> = ({ animeId, onClose,
     );
   }
 
-  if (!anime) return null;
+  if (!anime) {
+    return (
+      <div
+        className="fixed inset-0 z-[100] flex items-center justify-center bg-ink/90 backdrop-blur-xl p-6"
+        onClick={onClose}
+      >
+        <div
+          className="max-w-md w-full bg-[#0a0a0a] border border-paper/10 p-8 text-center space-y-6 shadow-2xl"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <p className="font-heading text-2xl text-paper">Couldn&apos;t open this title</p>
+          <p className="text-paper/50 text-sm font-light leading-relaxed">
+            {loadError ?? 'Something went wrong while loading anime details.'}
+          </p>
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            <button
+              type="button"
+              onClick={() => setRetryCount((c) => c + 1)}
+              className="px-6 py-3 bg-primary text-paper font-mono text-[12px] tracking-[0.2em] uppercase hover:brightness-110 transition-all"
+            >
+              Try again
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-6 py-3 bg-paper/[0.03] border border-paper/10 text-paper font-mono text-[12px] tracking-[0.2em] uppercase hover:bg-paper/[0.06] transition-all"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <AnimatePresence>
