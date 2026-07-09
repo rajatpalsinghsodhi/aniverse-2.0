@@ -67,7 +67,7 @@ const TopCharts: React.FC<{ onWatch: (id: number) => void }> = ({ onWatch }) => 
   }, [isLoading, hasMore, loadMore]);
 
   return (
-    <div className="p-4 sm:p-6 md:p-8 space-y-10">
+    <div className="p-4 sm:p-6 md:p-8 3xl:px-10 4xl:px-12 space-y-10">
       <header className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div>
           <h1 className="font-heading text-5xl text-paper tracking-normal flex items-center gap-3">
@@ -108,7 +108,7 @@ const TopCharts: React.FC<{ onWatch: (id: number) => void }> = ({ onWatch }) => 
         </div>
       ) : (
         <>
-          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4 sm:gap-6 md:gap-8">
+          <div className="anime-poster-grid">
             {topAnime.map((anime, index) => (
               <motion.div
                 key={`${anime.mal_id}-${index}`}

@@ -42,6 +42,10 @@
                         "3xl": "0",
                         "full": "9999px"
                     },
+                    screens: {
+                        '3xl': '1920px',
+                        '4xl': '2560px',
+                    },
                 },
             },
         }
@@ -214,6 +218,34 @@
 
         video::backdrop { background-color: black; }
         .video-overlay-gradient { background: linear-gradient(to top, rgba(0,0,0,0.8) 0%, transparent 40%); }
+
+        /* Poster grids — auto-fill columns on wide / 4K displays */
+        .anime-poster-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 1rem;
+        }
+        @media (min-width: 640px) {
+            .anime-poster-grid {
+                grid-template-columns: repeat(auto-fill, minmax(10.5rem, 1fr));
+                gap: 1.25rem;
+            }
+        }
+        @media (min-width: 1024px) {
+            .anime-poster-grid { gap: 1.5rem; }
+        }
+        @media (min-width: 1920px) {
+            .anime-poster-grid {
+                grid-template-columns: repeat(auto-fill, minmax(12rem, 1fr));
+                gap: 1.75rem;
+            }
+        }
+        @media (min-width: 2560px) {
+            .anime-poster-grid {
+                grid-template-columns: repeat(auto-fill, minmax(13rem, 1fr));
+                gap: 2rem;
+            }
+        }
 
         /* Selection color */
         ::selection {

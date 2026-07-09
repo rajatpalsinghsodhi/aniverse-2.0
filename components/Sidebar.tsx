@@ -10,7 +10,7 @@ interface SidebarProps {
 
 const Sidebar: React.FC<SidebarProps> = ({ activeView, onViewChange, user, onLogout }) => {
   return (
-    <aside className="w-64 flex-shrink-0 border-r border-paper/[0.06] flex flex-col justify-between bg-ink p-6 overflow-y-auto no-scrollbar">
+    <aside className="w-64 3xl:w-72 4xl:w-80 flex-shrink-0 h-screen border-r border-paper/[0.06] flex flex-col justify-between bg-ink p-6 3xl:p-7 4xl:p-8 overflow-y-auto no-scrollbar">
       <div className="flex flex-col gap-8">
         {/* Logo */}
         <div className="flex items-center gap-3 cursor-grow" onClick={() => onViewChange('home')}>

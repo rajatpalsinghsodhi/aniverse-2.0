@@ -624,7 +624,7 @@ const App: React.FC = () => {
             )}
 
             {/* Genre Filter */}
-            <section className="px-4 sm:px-6 md:px-6 lg:px-8 pb-6 relative">
+            <section className="px-4 sm:px-6 md:px-6 lg:px-8 3xl:px-10 4xl:px-12 pb-6 relative">
               <div className="flex items-center gap-2 h-10">
                 <button
                   type="button"
@@ -675,7 +675,7 @@ const App: React.FC = () => {
             </section>
 
             {/* Trending Now */}
-            <section className="px-4 sm:px-6 md:px-6 lg:px-8 pb-10">
+            <section className="px-4 sm:px-6 md:px-6 lg:px-8 3xl:px-10 4xl:px-12 pb-10">
               <div className="flex flex-col lg:flex-row lg:items-center justify-between pb-6 gap-4">
                 <div className="min-w-0">
                   <h2 className="font-heading text-2xl text-paper tracking-normal flex items-center gap-3">
@@ -717,7 +717,7 @@ const App: React.FC = () => {
                   View all →
                 </button>
               </div>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4 md:gap-5 lg:gap-6">
+              <div className="anime-poster-grid">
                 {trending.map((anime, index) => (
                   <AnimeCard
                     key={`${anime.mal_id}-${index}`}
@@ -746,7 +746,7 @@ const App: React.FC = () => {
             </section>
 
             {/* Highest rated (by score) */}
-            <section className="px-4 sm:px-6 md:px-6 lg:px-8 pb-10">
+            <section className="px-4 sm:px-6 md:px-6 lg:px-8 3xl:px-10 4xl:px-12 pb-10">
               <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-2 pb-6">
                 <div>
                   <h2 className="font-heading text-2xl text-paper tracking-normal flex items-center gap-3">
@@ -764,7 +764,7 @@ const App: React.FC = () => {
                   View all →
                 </button>
               </div>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4 md:gap-5 lg:gap-6">
+              <div className="anime-poster-grid">
                 {topRated.map(anime => (
                   <AnimeCard key={anime.mal_id} anime={anime} onWatch={openWatch} />
                 ))}
@@ -853,9 +853,9 @@ const App: React.FC = () => {
       </AnimatePresence>
 
       <main className="flex-1 flex flex-col overflow-y-auto no-scrollbar relative">
-        <div className="flex-1 flex flex-col w-full max-w-[1600px] mx-auto">
+        <div className="flex-1 flex flex-col w-full min-w-0">
         {/* Top Header */}
-        <header className="sticky top-0 z-50 flex items-center justify-between px-4 md:px-6 lg:px-8 py-4 glass-effect gap-4">
+        <header className="sticky top-0 z-50 flex items-center justify-between px-4 md:px-6 lg:px-8 3xl:px-10 4xl:px-12 py-4 glass-effect gap-4">
           <div className="flex items-center gap-4 flex-1">
             <button 
               onClick={() => setIsSidebarOpen(true)}
@@ -863,7 +863,7 @@ const App: React.FC = () => {
             >
               <span className="material-symbols-outlined">menu</span>
             </button>
-            <div className="flex flex-1 max-w-xl relative">
+            <div className="flex flex-1 max-w-xl 3xl:max-w-2xl 4xl:max-w-3xl relative">
               <form onSubmit={handleSearch} className="w-full">
                 <div className="relative w-full">
                   <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-muted text-xl">search</span>

@@ -15,8 +15,8 @@ const Hero: React.FC<HeroProps> = ({ featured, onWatch }) => {
   const randomKanji = KANJI_DECORATIONS[featured.mal_id % KANJI_DECORATIONS.length];
 
   return (
-    <section className="relative px-4 md:px-6 lg:px-8 pt-4 pb-8">
-      <div className="relative w-full min-h-[360px] md:min-h-[420px] lg:min-h-[520px] overflow-hidden group border border-paper/[0.06]">
+    <section className="relative px-4 md:px-6 lg:px-8 3xl:px-10 4xl:px-12 pt-4 pb-8">
+      <div className="relative w-full min-h-[360px] md:min-h-[420px] lg:min-h-[520px] 3xl:min-h-[560px] 4xl:min-h-[600px] overflow-hidden group border border-paper/[0.06]">
         {/* Background image */}
         <div className="absolute inset-0">
           <img
@@ -54,13 +54,13 @@ const Hero: React.FC<HeroProps> = ({ featured, onWatch }) => {
               <img
                 src={featured.images.jpg.large_image_url}
                 alt={featured.title_english || featured.title}
-                className="block max-h-[260px] sm:max-h-[280px] md:max-h-[320px] lg:max-h-[360px] w-auto"
+                className="block max-h-[260px] sm:max-h-[280px] md:max-h-[320px] lg:max-h-[360px] 3xl:max-h-[420px] 4xl:max-h-[480px] w-auto"
               />
             </div>
           </div>
 
           {/* Text */}
-          <div className="flex-1 max-w-2xl flex flex-col gap-3 md:gap-4 lg:gap-6">
+          <div className="flex-1 max-w-2xl 3xl:max-w-3xl 4xl:max-w-4xl flex flex-col gap-3 md:gap-4 lg:gap-6 3xl:gap-8">
             <div className="flex items-center gap-3">
               <span className="px-3 py-1 bg-primary text-paper font-mono text-[12px] tracking-[0.2em] uppercase shadow-lg shadow-primary/30">
                 Featured Now
@@ -72,7 +72,7 @@ const Hero: React.FC<HeroProps> = ({ featured, onWatch }) => {
             </div>
             
             <div className="space-y-2 md:space-y-3">
-              <h2 className="font-heading text-4xl md:text-5xl lg:text-6xl xl:text-7xl text-paper leading-tight tracking-normal drop-shadow-lg line-clamp-2">
+              <h2 className="font-heading text-4xl md:text-5xl lg:text-6xl xl:text-7xl 3xl:text-8xl text-paper leading-tight tracking-normal drop-shadow-lg line-clamp-2">
                 {featured.title_english || featured.title}
               </h2>
               <p className="text-paper/50 text-sm md:text-base leading-relaxed line-clamp-3 font-light">

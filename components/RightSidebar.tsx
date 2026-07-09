@@ -261,7 +261,7 @@ const RightSidebar: React.FC<RightSidebarProps> = ({ user, library, onWatch, var
   }
 
   return (
-    <aside className="w-64 lg:w-72 xl:w-80 flex-shrink-0 h-screen border-l border-paper/[0.06] bg-ink/30 hidden lg:flex flex-col p-4 sm:p-6 xl:p-8 overflow-y-auto no-scrollbar">
+    <aside className="w-64 lg:w-72 xl:w-80 3xl:w-[22rem] 4xl:w-96 flex-shrink-0 h-screen border-l border-paper/[0.06] bg-ink/30 hidden lg:flex flex-col p-4 sm:p-6 xl:p-8 3xl:p-9 4xl:p-10 overflow-y-auto no-scrollbar">
       {content}
     </aside>
   );

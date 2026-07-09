@@ -142,14 +142,14 @@ const AnimeDetailsModal: React.FC<AnimeDetailsModalProps> = ({ animeId, onClose,
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 z-[100] flex items-start lg:items-center justify-center p-0 lg:p-12 bg-ink/95 backdrop-blur-2xl overflow-y-auto"
+        className="fixed inset-0 z-[100] flex items-start lg:items-center justify-center p-0 lg:p-8 3xl:p-6 4xl:p-4 bg-ink/95 backdrop-blur-2xl overflow-y-auto"
         onClick={onClose}
       >
         <motion.div 
           initial={{ scale: 0.95, opacity: 0, y: 40 }}
           animate={{ scale: 1, opacity: 1, y: 0 }}
           exit={{ scale: 0.95, opacity: 0, y: 40 }}
-          className="relative w-full max-w-7xl bg-[#0a0a0a] border border-paper/10 overflow-y-auto lg:overflow-hidden shadow-[0_0_100px_rgba(0,0,0,0.8)] flex flex-col lg:flex-row h-screen lg:max-h-[90vh]"
+          className="relative w-full max-w-7xl 3xl:max-w-[min(92vw,1800px)] 4xl:max-w-[min(90vw,2200px)] bg-[#0a0a0a] border border-paper/10 overflow-y-auto lg:overflow-hidden shadow-[0_0_100px_rgba(0,0,0,0.8)] flex flex-col lg:flex-row h-screen lg:max-h-[90vh] 3xl:max-h-[92vh] 4xl:max-h-[94vh]"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Background Atmosphere */}
@@ -159,7 +159,7 @@ const AnimeDetailsModal: React.FC<AnimeDetailsModalProps> = ({ animeId, onClose,
           </div>
 
           {/* Poster Section */}
-          <div className="w-full lg:w-[35%] relative flex flex-col border-b lg:border-b-0 lg:border-r border-paper/[0.06] bg-ink/40 backdrop-blur-md shrink-0 lg:overflow-y-auto no-scrollbar">
+          <div className="w-full lg:w-[35%] 3xl:w-[32%] 4xl:w-[30%] relative flex flex-col border-b lg:border-b-0 lg:border-r border-paper/[0.06] bg-ink/40 backdrop-blur-md shrink-0 lg:overflow-y-auto no-scrollbar">
             <button 
               onClick={onClose}
               className="absolute top-4 right-4 z-[110] p-2.5 bg-paper/10 text-paper hover:bg-primary transition-all border border-paper/20 backdrop-blur-md shadow-2xl"
@@ -180,7 +180,7 @@ const AnimeDetailsModal: React.FC<AnimeDetailsModalProps> = ({ animeId, onClose,
                 <motion.div 
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="w-full max-w-[160px] sm:max-w-[200px] md:max-w-[240px] lg:max-w-[280px] aspect-[2/3] overflow-hidden shadow-[0_30px_60px_rgba(0,0,0,0.6)] border border-paper/10 group flex-shrink-0"
+                  className="w-full max-w-[160px] sm:max-w-[200px] md:max-w-[240px] lg:max-w-[280px] 3xl:max-w-[320px] 4xl:max-w-[360px] aspect-[2/3] overflow-hidden shadow-[0_30px_60px_rgba(0,0,0,0.6)] border border-paper/10 group flex-shrink-0"
                 >
                   <img 
                     src={anime.images.jpg.large_image_url} 
@@ -248,7 +248,7 @@ const AnimeDetailsModal: React.FC<AnimeDetailsModalProps> = ({ animeId, onClose,
           {/* Right: Content */}
           <div className="lg:flex-1 flex flex-col bg-[#0a0a0a]/80 backdrop-blur-xl lg:min-h-0">
             {/* Tab Nav */}
-            <div className="sticky top-0 lg:top-0 z-[90] bg-[#0a0a0a] flex items-center gap-4 lg:gap-8 px-4 lg:px-12 pt-6 lg:pt-12 border-b border-paper/[0.06] overflow-x-auto no-scrollbar scroll-smooth">
+            <div className="sticky top-0 lg:top-0 z-[90] bg-[#0a0a0a] flex items-center gap-4 lg:gap-8 3xl:gap-10 px-4 lg:px-12 3xl:px-14 4xl:px-16 pt-6 lg:pt-12 3xl:pt-14 border-b border-paper/[0.06] overflow-x-auto no-scrollbar scroll-smooth">
               {[
                 { id: 'info', label: 'OVERVIEW', icon: Info },
                 { id: 'characters', label: 'CAST', icon: Users },
@@ -278,7 +278,7 @@ const AnimeDetailsModal: React.FC<AnimeDetailsModalProps> = ({ animeId, onClose,
             </div>
 
             {/* Content */}
-            <div className="lg:flex-1 lg:overflow-y-auto p-4 md:p-6 lg:p-12 no-scrollbar pb-32 lg:pb-12">
+            <div className="lg:flex-1 lg:overflow-y-auto p-4 md:p-6 lg:p-12 3xl:p-14 4xl:p-16 no-scrollbar pb-32 lg:pb-12">
               <AnimatePresence mode="wait">
                 {activeTab === 'info' && (
                   <motion.div 
@@ -304,7 +304,7 @@ const AnimeDetailsModal: React.FC<AnimeDetailsModalProps> = ({ animeId, onClose,
                           {anime.episodes ? `${anime.episodes} Episodes` : 'Episodes TBA'}
                         </span>
                       </div>
-                      <h1 className="font-heading text-4xl md:text-6xl text-paper leading-tight tracking-normal">
+                      <h1 className="font-heading text-4xl md:text-6xl 3xl:text-7xl 4xl:text-8xl text-paper leading-tight tracking-normal">
                         {anime.title_english || anime.title}
                       </h1>
                       <p className="text-muted font-bold text-sm md:text-lg italic">{anime.title_english ? anime.title : ''}</p>
@@ -535,7 +535,7 @@ const AnimeDetailsModal: React.FC<AnimeDetailsModalProps> = ({ animeId, onClose,
                     key="gallery"
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="grid grid-cols-2 lg:grid-cols-3 gap-6"
+                    className="grid grid-cols-2 lg:grid-cols-3 3xl:grid-cols-4 4xl:grid-cols-5 gap-6"
                   >
                     {pictures.map((pic, idx) => (
                       <div key={idx} className="aspect-[2/3] overflow-hidden border border-paper/10 hover:scale-[1.05] transition-all duration-500 cursor-grow shadow-2xl group">
@@ -572,7 +572,7 @@ const AnimeDetailsModal: React.FC<AnimeDetailsModalProps> = ({ animeId, onClose,
                     </div>
 
                     {recommendations.length > 0 ? (
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 3xl:grid-cols-3 4xl:grid-cols-4 gap-4">
                         {recommendations.map((rec) => (
                           <button
                             key={rec.entry.mal_id}
