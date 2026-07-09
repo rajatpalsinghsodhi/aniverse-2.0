@@ -39,15 +39,10 @@ const AnimeDetailsModal: React.FC<AnimeDetailsModalProps> = ({ animeId, onClose,
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'info' | 'characters' | 'relations' | 'gallery' | 'similar' | 'watch'>('info');
   const [nextEpisodeLabel, setNextEpisodeLabel] = useState<string | null>(null);
-  const [showInlineTrailer, setShowInlineTrailer] = useState(false);
 
   useEffect(() => {
     setCurrentAnimeId(animeId);
   }, [animeId]);
-
-  useEffect(() => {
-    setShowInlineTrailer(false);
-  }, [currentAnimeId]);
 
   const MAINSTREAM_PLATFORMS = [
     'Crunchyroll', 'Netflix', 'Amazon Prime Video', 'Amazon', 'Hulu',
@@ -361,11 +356,8 @@ const AnimeDetailsModal: React.FC<AnimeDetailsModalProps> = ({ animeId, onClose,
                       const watchUrl = videoId
                         ? `https://www.youtube.com/watch?v=${videoId}`
                         : anime.trailer?.url;
-                      const posterUrl = videoId
-                        ? `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`
-                        : anime.images.jpg.large_image_url;
                       const nocookieEmbedUrl = videoId
-                        ? `https://www.youtube-nocookie.com/embed/${videoId}?rel=0&modestbranding=1&cc_load_policy=1&hl=en&autoplay=1`
+                        ? `https://www.youtube-nocookie.com/embed/${videoId}?rel=0&modestbranding=1&cc_load_policy=1&hl=en`
                         : null;
 
                       return (
@@ -375,73 +367,32 @@ const AnimeDetailsModal: React.FC<AnimeDetailsModalProps> = ({ animeId, onClose,
                             <span className="font-mono text-[12px] tracking-[0.3em] uppercase">Official Trailer</span>
                             <div className="h-px flex-1 bg-primary/20" />
                           </div>
-                          {videoId && watchUrl ? (
+                          {videoId && nocookieEmbedUrl ? (
                             <div className="space-y-3">
-                              <div className="aspect-video overflow-hidden border border-paper/10 bg-black shadow-2xl relative group">
-                                {showInlineTrailer && nocookieEmbedUrl ? (
-                                  <iframe
-                                    src={nocookieEmbedUrl}
-                                    title="Official Trailer"
-                                    className="w-full h-full"
-                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                                    allowFullScreen
-                                    loading="lazy"
-                                    referrerPolicy="strict-origin-when-cross-origin"
-                                  />
-                                ) : (
-                                  <>
-                                    <img
-                                      src={posterUrl}
-                                      alt="Trailer thumbnail"
-                                      className="w-full h-full object-cover"
-                                      onError={(e) => {
-                                        e.currentTarget.src = anime.images.jpg.large_image_url;
-                                      }}
-                                    />
-                                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-black/20" />
-                                    <a
-                                      href={watchUrl}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className="absolute inset-0 flex flex-col items-center justify-center gap-4 transition-colors hover:bg-black/20"
-                                    >
-                                      <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-primary/90 flex items-center justify-center shadow-lg shadow-primary/30 group-hover:scale-105 transition-transform">
-                                        <Play size={32} fill="currentColor" className="text-paper ml-1" />
-                                      </div>
-                                      <span className="font-mono text-[12px] tracking-[0.2em] uppercase text-paper/90 flex items-center gap-2">
-                                        Watch on YouTube <ExternalLink size={12} />
-                                      </span>
-                                    </a>
-                                  </>
-                                )}
+                              <div className="aspect-video overflow-hidden border border-paper/10 bg-black shadow-2xl">
+                                <iframe
+                                  key={videoId}
+                                  src={nocookieEmbedUrl}
+                                  title="Official Trailer"
+                                  className="w-full h-full"
+                                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                  allowFullScreen
+                                  loading="lazy"
+                                  referrerPolicy="strict-origin-when-cross-origin"
+                                />
                               </div>
-                              <div className="flex flex-wrap items-center justify-between gap-2 px-1">
-                                {showInlineTrailer ? (
-                                  <button
-                                    type="button"
-                                    onClick={() => setShowInlineTrailer(false)}
-                                    className="font-mono text-[11px] tracking-[0.15em] uppercase text-muted hover:text-paper transition-colors"
+                              {watchUrl && (
+                                <div className="flex justify-end px-1">
+                                  <a
+                                    href={watchUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="font-mono text-[11px] tracking-[0.15em] uppercase text-muted hover:text-primary transition-colors flex items-center gap-1.5"
                                   >
-                                    Back to preview
-                                  </button>
-                                ) : (
-                                  <button
-                                    type="button"
-                                    onClick={() => setShowInlineTrailer(true)}
-                                    className="font-mono text-[11px] tracking-[0.15em] uppercase text-muted hover:text-primary transition-colors"
-                                  >
-                                    Play here instead
-                                  </button>
-                                )}
-                                <a
-                                  href={watchUrl}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="font-mono text-[11px] tracking-[0.15em] uppercase text-primary hover:text-paper transition-colors flex items-center gap-1.5"
-                                >
-                                  Open on YouTube <ExternalLink size={11} />
-                                </a>
-                              </div>
+                                    Open on YouTube <ExternalLink size={11} />
+                                  </a>
+                                </div>
+                              )}
                             </div>
                           ) : (
                             <div className="aspect-video overflow-hidden border border-paper/10 bg-paper/[0.02] flex items-center justify-center">
