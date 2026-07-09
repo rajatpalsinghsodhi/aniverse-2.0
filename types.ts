@@ -25,10 +25,12 @@ export interface Anime {
   duration: string;
 }
 
+export type TopChartFilter = 'bypopularity' | 'byscore' | 'airing';
+
 /** Position on a catalog top-anime chart (Top Charts view only). Not the same as global score rank. */
 export interface AnimeListRankChart {
   position: number;
-  filter: 'bypopularity' | 'favorite' | 'airing';
+  filter: TopChartFilter;
 }
 
 export interface JikanResponse<T> {
